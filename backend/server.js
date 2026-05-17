@@ -5,6 +5,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
+import authRoutes from './routes/authRoutes.js';
 
 // Load environmental variables
 dotenv.config();
@@ -26,6 +27,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
+
+// Mount API routes
+app.use('/api/auth', authRoutes);
 
 // REST Health Check Endpoint
 app.get('/health', (req, res) => {
