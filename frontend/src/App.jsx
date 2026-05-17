@@ -7,13 +7,16 @@ import DocumentWorkspace from './components/Editor/DocumentWorkspace';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import ErrorPage from './components/Common/ErrorPage';
 import useAuthStore from './store/store-placeholder';
+import useThemeStore from './store/useThemeStore';
 
 function App() {
     const checkAuth = useAuthStore((state) => state.checkAuth);
+    const initTheme = useThemeStore((state) => state.initTheme);
 
     useEffect(() => {
         checkAuth();
-    }, [checkAuth]);
+        initTheme();
+    }, [checkAuth, initTheme]);
 
     return (
         <Router>

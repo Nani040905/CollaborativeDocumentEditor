@@ -5,8 +5,10 @@ import useDocStore from '../../store/useDocStore';
 import Editor from './Editor';
 import { 
     ArrowLeft, Check, CloudLightning, RefreshCw, Share2, 
-    ChevronRight, AlignLeft, Copy, Mail, UserPlus
+    ChevronRight, AlignLeft, Copy, Mail, UserPlus,
+    Sun, Moon
 } from 'lucide-react';
+import useThemeStore from '../../store/useThemeStore';
 
 const DocumentWorkspace = () => {
     const { id } = useParams();
@@ -19,6 +21,7 @@ const DocumentWorkspace = () => {
         inviteCollaborator, 
         loading: docsLoading 
     } = useDocStore();
+    const { theme, toggleTheme } = useThemeStore();
 
     const [title, setTitle] = useState('');
     const [saveStatus, setSaveStatus] = useState('All changes saved');
@@ -149,6 +152,15 @@ const DocumentWorkspace = () => {
                             ))}
                         </div>
                     )}
+
+                    {/* Theme Toggle Switch */}
+                    <button
+                        onClick={toggleTheme}
+                        className="flex items-center justify-center p-2 rounded border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition cursor-pointer select-none"
+                        title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+                    >
+                        {theme === 'dark' ? <Moon size={13} className="text-blue-400" /> : <Sun size={13} className="text-yellow-500" />}
+                    </button>
 
                     {/* Share Trigger */}
                     <div className="relative">

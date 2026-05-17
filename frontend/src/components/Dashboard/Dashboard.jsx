@@ -5,8 +5,10 @@ import useDocStore from '../../store/useDocStore';
 import { 
     FileText, Plus, Search, LogOut, Trash2, 
     Settings, Users, FolderOpen, Calendar, X,
-    RotateCcw, Shield, ShieldAlert, Monitor, CheckCircle, Save
+    RotateCcw, Shield, ShieldAlert, Monitor, CheckCircle, Save,
+    Sun, Moon
 } from 'lucide-react';
+import useThemeStore from '../../store/useThemeStore';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -18,6 +20,7 @@ const Dashboard = () => {
         deleteDocument: dbDeleteDocument,
         loading: docsLoading 
     } = useDocStore();
+    const { theme, toggleTheme } = useThemeStore();
     
     // Core navigation state
     const [activeTab, setActiveTab] = useState('documents');
@@ -322,25 +325,36 @@ const Dashboard = () => {
                             />
                         </div>
 
-                        {activeTab === 'documents' && (
+                        <div className="flex items-center gap-3">
+                            {/* Theme Toggle Switch */}
                             <button
-                                onClick={() => setShowModal(true)}
-                                className="flex items-center gap-1.5 rounded bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 cursor-pointer"
+                                onClick={toggleTheme}
+                                className="flex items-center justify-center p-2 rounded border border-slate-800 bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-slate-200 transition cursor-pointer select-none"
+                                title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
                             >
-                                <Plus size={14} />
-                                <span>New Document</span>
+                                {theme === 'dark' ? <Moon size={13} className="text-blue-400" /> : <Sun size={13} className="text-yellow-550" />}
                             </button>
-                        )}
 
-                        {activeTab === 'trash' && trashDocuments.length > 0 && (
-                            <button
-                                onClick={handleEmptyTrash}
-                                className="flex items-center gap-1.5 rounded border border-slate-800 bg-slate-900 hover:bg-red-950/40 hover:text-red-400 px-4 py-2 text-xs font-semibold text-slate-400 transition cursor-pointer"
-                            >
-                                <Trash2 size={13} />
-                                <span>Empty Trash Bin</span>
-                            </button>
-                        )}
+                            {activeTab === 'documents' && (
+                                <button
+                                    onClick={() => setShowModal(true)}
+                                    className="flex items-center gap-1.5 rounded bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 cursor-pointer"
+                                >
+                                    <Plus size={14} />
+                                    <span>New Document</span>
+                                </button>
+                            )}
+
+                            {activeTab === 'trash' && trashDocuments.length > 0 && (
+                                <button
+                                    onClick={handleEmptyTrash}
+                                    className="flex items-center gap-1.5 rounded border border-slate-800 bg-slate-900 hover:bg-red-950/40 hover:text-red-400 px-4 py-2 text-xs font-semibold text-slate-400 transition cursor-pointer"
+                                >
+                                    <Trash2 size={13} />
+                                    <span>Empty Trash Bin</span>
+                                </button>
+                            )}
+                        </div>
                     </header>
                 )}
 

@@ -102,3 +102,138 @@
   font-style: italic !important;
 }
 
+/* ==========================================
+   MINIMALIST slate-light MODE CSS OVERRIDES
+   ========================================== */
+body.light-mode {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  background-image: radial-gradient(at 0% 0%, rgba(203, 213, 225, 0.4) 0, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(241, 245, 249, 0.8) 0, transparent 50%) !important;
+}
+
+body.light-mode ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+body.light-mode ::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+/* Sidebar Light Override */
+body.light-mode aside {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+body.light-mode aside * {
+  color: #334155 !important;
+}
+body.light-mode aside button:hover {
+  background-color: #f1f5f9 !important;
+}
+body.light-mode aside nav button.bg-slate-800 {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Header Light Override */
+body.light-mode header {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-color: #e2e8f0 !important;
+}
+body.light-mode header input {
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  background-color: #ffffff !important;
+}
+body.light-mode header input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Main Panels & Outline */
+body.light-mode main {
+  background-color: #f8fafc !important;
+}
+body.light-mode aside.hidden.md\:block {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Document Cards */
+body.light-mode .grid > div {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+body.light-mode .grid > div:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+}
+body.light-mode .grid h3 {
+  color: #0f172a !important;
+}
+body.light-mode .grid p {
+  color: #475569 !important;
+}
+body.light-mode .grid .border-t {
+  border-color: #f1f5f9 !important;
+}
+body.light-mode .grid span, body.light-mode .grid div {
+  color: #64748b !important;
+}
+
+/* Settings Form */
+body.light-mode form > div {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+body.light-mode form label {
+  color: #475569 !important;
+}
+body.light-mode form input, body.light-mode form select {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Quill Editor Light Mode Overrides */
+body.light-mode .ql-toolbar.ql-snow {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+body.light-mode .ql-toolbar.ql-snow .ql-stroke {
+  stroke: #475569 !important;
+}
+body.light-mode .ql-toolbar.ql-snow .ql-fill {
+  fill: #475569 !important;
+}
+body.light-mode .ql-toolbar.ql-snow .ql-picker {
+  color: #475569 !important;
+}
+body.light-mode .ql-toolbar.ql-snow .ql-picker-options {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+}
+body.light-mode .ql-container.ql-snow {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+}
+body.light-mode .ql-editor.ql-blank::before {
+  color: #94a3b8 !important;
+}
+
+/* Modal dialog overrides */
+body.light-mode .fixed.inset-0 > div {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+body.light-mode .fixed.inset-0 h3 {
+  color: #0f172a !important;
+}
+body.light-mode .fixed.inset-0 input, body.light-mode .fixed.inset-0 select {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+
