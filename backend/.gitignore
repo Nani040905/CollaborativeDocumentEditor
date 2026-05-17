@@ -25,4 +25,5 @@ dist-ssr
 
 .env
 
-test-models.js
+# Ignore all automated test scripts
+tests/

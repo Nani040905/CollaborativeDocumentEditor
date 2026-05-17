@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import useAuthStore from '../../store/useAuthStore';
+import useDocStore from '../../store/useDocStore';
 import { 
     FileText, Plus, Search, LogOut, Trash2, 
     Settings, Users, FolderOpen, Calendar, X,
@@ -10,6 +11,13 @@ import {
 const Dashboard = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuthStore();
+    const { 
+        documents: dbDocuments, 
+        fetchDocuments, 
+        createDocument: dbCreateDocument, 
+        deleteDocument: dbDeleteDocument,
+        loading: docsLoading 
+    } = useDocStore();
     
     // Core navigation state
     const [activeTab, setActiveTab] = useState('documents');
@@ -18,8 +26,6 @@ const Dashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
     
     // Document collections
-    const [documents, setDocuments] = useState([]);
-    const [sharedDocuments, setSharedDocuments] = useState([]);
     const [trashDocuments, setTrashDocuments] = useState([]);
     
     // Modal & creation states
@@ -34,18 +40,7 @@ const Dashboard = () => {
     const [enableAutosave, setEnableAutosave] = useState(true);
     const [presenceBubbles, setPresenceBubbles] = useState(true);
 
-    // Initial mock document fixtures
-    const defaultDocs = [
-        { id: 'doc-1', title: 'Product Roadmap & Strategy 2026', updatedAt: '2 hours ago', ownerInitials: 'JD', shares: 3, content: 'This is the strategic roadmap for the upcoming product lifecycle...' },
-        { id: 'doc-2', title: 'Weekly Engineering Sync Notes', updatedAt: 'Yesterday', ownerInitials: 'SK', shares: 1, content: 'Discussed task status and frontend routing setup with Tailwind CSS v4...' },
-        { id: 'doc-3', title: 'MERN Stack Architecture Spec', updatedAt: '3 days ago', ownerInitials: 'JD', shares: 5, content: 'Architectural breakdown of backend JWT authentications and socket connections...' }
-    ];
-
-    const defaultShared = [
-        { id: 'shared-1', title: 'Q3 Product Operations & KPI Planning', updatedAt: '5 mins ago', ownerInitials: 'TC', shares: 8, content: 'Collaborative spreadsheet outlining department metrics and growth targets...' },
-        { id: 'shared-2', title: 'Developer Relations Guidelines', updatedAt: '2 days ago', ownerInitials: 'HR', shares: 4, content: 'Standard operating procedures for managing open-source contributor channels...' }
-    ];
-
+    // Initial seed list for Trash list
     const defaultTrash = [];
 
     // Load initial states from LocalStorage or seed defaults
@@ -53,22 +48,9 @@ const Dashboard = () => {
         if (user?.name) {
             setSettingsName(user.name);
         }
-
-        const storedDocs = localStorage.getItem('mock_documents');
-        if (storedDocs) {
-            setDocuments(JSON.parse(storedDocs));
-        } else {
-            localStorage.setItem('mock_documents', JSON.stringify(defaultDocs));
-            setDocuments(defaultDocs);
-        }
-
-        const storedShared = localStorage.getItem('mock_shared');
-        if (storedShared) {
-            setSharedDocuments(JSON.parse(storedShared));
-        } else {
-            localStorage.setItem('mock_shared', JSON.stringify(defaultShared));
-            setSharedDocuments(defaultShared);
-        }
+        
+        // Fetch active documents from MERN backend
+        fetchDocuments();
 
         const storedTrash = localStorage.getItem('mock_trash');
         if (storedTrash) {
@@ -77,62 +59,117 @@ const Dashboard = () => {
             localStorage.setItem('mock_trash', JSON.stringify(defaultTrash));
             setTrashDocuments(defaultTrash);
         }
-    }, [user]);
+    }, [user, fetchDocuments]);
+
+    // Helpers to check ownership and format credentials
+    const isDocOwner = (doc) => {
+        const ownerId = doc.owner?._id || doc.owner;
+        return ownerId && user?.id && ownerId.toString() === user.id.toString();
+    };
+
+    const getOwnerInitials = (doc) => {
+        if (doc.owner?.name) {
+            return doc.owner.name.substring(0, 2).toUpperCase();
+        }
+        return 'US';
+    };
+
+    const getOwnerName = (doc) => {
+        if (doc.owner?.name) {
+            return isDocOwner(doc) ? 'Me' : doc.owner.name;
+        }
+        return 'Unknown';
+    };
+
+    const formatTimestamp = (dateString) => {
+        if (!dateString) return 'Just now';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+        
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        
+        const diffHrs = Math.floor(diffMins / 60);
+        if (diffHrs < 24) return `${diffHrs}h ago`;
+        
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    };
+
+    const formatSnippet = (content) => {
+        if (!content) return 'Empty document. Start collaborating...';
+        if (typeof content === 'object') {
+            if (content.ops && Array.isArray(content.ops)) {
+                return content.ops.map(op => op.insert).join('').substring(0, 100) || 'Empty strategy sheet...';
+            }
+            return JSON.stringify(content).substring(0, 100);
+        }
+        return content.substring(0, 100);
+    };
 
     // Handlers
-    const handleCreateDocument = (e) => {
+    const handleCreateDocument = async (e) => {
         e.preventDefault();
         if (!newTitle.trim()) return;
 
-        const newDoc = {
-            id: 'doc-' + Date.now(),
-            title: newTitle.trim(),
-            updatedAt: 'Just now',
-            ownerInitials: user?.name ? user.name.substring(0, 2).toUpperCase() : 'ME',
-            shares: 0,
-            content: newTemplate === 'code' ? '// Write your code spec here' : 'Start typing your collaborative document contents here...'
-        };
+        const templateContent = newTemplate === 'code' 
+            ? '// Write your software technical design here\n' 
+            : 'Start typing your collaborative strategy sheet here...\n';
 
-        const updatedDocs = [newDoc, ...documents];
-        setDocuments(updatedDocs);
-        localStorage.setItem('mock_documents', JSON.stringify(updatedDocs));
+        const newDoc = await dbCreateDocument(newTitle.trim(), templateContent);
         
         setShowModal(false);
         setNewTitle('');
         setNewTemplate('blank');
 
-        // Instantly navigate to the newly created document!
-        navigate(`/document/${newDoc.id}`);
+        if (newDoc) {
+            // Instantly navigate to the newly created document!
+            navigate(`/document/${newDoc._id}`);
+        }
     };
 
-    // Move to Trash handler
-    const handleMoveToTrash = (e, id) => {
+    // Move to Trash handler (Deletes on server, adds to local trash array)
+    const handleMoveToTrash = async (e, id) => {
         e.stopPropagation();
-        const docToTrash = documents.find(doc => doc.id === id);
+        const docToTrash = dbDocuments.find(doc => doc._id === id);
         if (!docToTrash) return;
 
-        const updatedDocs = documents.filter(doc => doc.id !== id);
-        setDocuments(updatedDocs);
-        localStorage.setItem('mock_documents', JSON.stringify(updatedDocs));
-
-        const updatedTrash = [docToTrash, ...trashDocuments];
-        setTrashDocuments(updatedTrash);
-        localStorage.setItem('mock_trash', JSON.stringify(updatedTrash));
+        const res = await dbDeleteDocument(id);
+        if (res.success) {
+            const updatedTrash = [
+                {
+                    id: docToTrash._id,
+                    title: docToTrash.title,
+                    content: docToTrash.content,
+                    updatedAt: new Date().toISOString(),
+                    ownerInitials: getOwnerInitials(docToTrash)
+                },
+                ...trashDocuments
+            ];
+            setTrashDocuments(updatedTrash);
+            localStorage.setItem('mock_trash', JSON.stringify(updatedTrash));
+        } else {
+            alert(`Failed to delete document: ${res.error || 'Access denied'}`);
+        }
     };
 
-    // Restore from Trash handler
-    const handleRestoreFromTrash = (e, id) => {
+    // Restore from Trash handler (Re-creates document on server, removes from trash list)
+    const handleRestoreFromTrash = async (e, id) => {
         e.stopPropagation();
         const docToRestore = trashDocuments.find(doc => doc.id === id);
         if (!docToRestore) return;
 
-        const updatedTrash = trashDocuments.filter(doc => doc.id !== id);
-        setTrashDocuments(updatedTrash);
-        localStorage.setItem('mock_trash', JSON.stringify(updatedTrash));
-
-        const updatedDocs = [docToRestore, ...documents];
-        setDocuments(updatedDocs);
-        localStorage.setItem('mock_documents', JSON.stringify(updatedDocs));
+        const newDoc = await dbCreateDocument(docToRestore.title, docToRestore.content);
+        if (newDoc) {
+            const updatedTrash = trashDocuments.filter(doc => doc.id !== id);
+            setTrashDocuments(updatedTrash);
+            localStorage.setItem('mock_trash', JSON.stringify(updatedTrash));
+        } else {
+            alert('Failed to restore document to server.');
+        }
     };
 
     // Permanent delete handler
@@ -163,13 +200,13 @@ const Dashboard = () => {
     // Filter selectors
     const getFilteredDocs = () => {
         if (activeTab === 'documents') {
-            return documents.filter(doc => 
-                doc.title.toLowerCase().includes(searchQuery.toLowerCase())
-            );
+            return dbDocuments
+                .filter(doc => isDocOwner(doc))
+                .filter(doc => doc.title.toLowerCase().includes(searchQuery.toLowerCase()));
         } else if (activeTab === 'shared') {
-            return sharedDocuments.filter(doc => 
-                doc.title.toLowerCase().includes(searchQuery.toLowerCase())
-            );
+            return dbDocuments
+                .filter(doc => !isDocOwner(doc))
+                .filter(doc => doc.title.toLowerCase().includes(searchQuery.toLowerCase()));
         } else if (activeTab === 'trash') {
             return trashDocuments.filter(doc => 
                 doc.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -310,8 +347,16 @@ const Dashboard = () => {
                 {/* Main Views Container */}
                 <div className="flex-1 overflow-y-auto p-8">
                     
+                    {/* loading state spinner */}
+                    {docsLoading && activeTab !== 'settings' && activeTab !== 'trash' && (
+                        <div className="flex justify-center items-center h-48 text-xs font-semibold text-slate-500">
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-500 border-t-transparent mr-2"></div>
+                            <span>Retrieving records from database...</span>
+                        </div>
+                    )}
+
                     {/* View 1: Active Documents Grid */}
-                    {activeTab === 'documents' && (
+                    {activeTab === 'documents' && !docsLoading && (
                         <>
                             <div className="mb-6">
                                 <h1 className="text-xl font-bold tracking-tight text-slate-100 font-display">Documents</h1>
@@ -328,8 +373,8 @@ const Dashboard = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {activeList.map((doc) => (
                                         <div
-                                            key={doc.id}
-                                            onClick={() => navigate(`/document/${doc.id}`)}
+                                            key={doc._id}
+                                            onClick={() => navigate(`/document/${doc._id}`)}
                                             className="border border-slate-800 bg-slate-900/50 hover:bg-slate-900/80 hover:border-slate-700 rounded-lg p-5 transition flex flex-col justify-between h-40 cursor-pointer shadow-sm group"
                                         >
                                             <div>
@@ -341,7 +386,7 @@ const Dashboard = () => {
                                                         </h3>
                                                     </div>
                                                     <button
-                                                        onClick={(e) => handleMoveToTrash(e, doc.id)}
+                                                        onClick={(e) => handleMoveToTrash(e, doc._id)}
                                                         className="p-1 text-slate-600 hover:text-red-400 hover:bg-slate-800 rounded transition cursor-pointer"
                                                         title="Move to Trash"
                                                     >
@@ -349,23 +394,23 @@ const Dashboard = () => {
                                                     </button>
                                                 </div>
                                                 <p className="mt-2 text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                                                    {doc.content}
+                                                    {formatSnippet(doc.content)}
                                                 </p>
                                             </div>
 
                                             <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500">
                                                 <div className="flex items-center gap-1">
                                                     <Calendar size={11} />
-                                                    <span>{doc.updatedAt}</span>
+                                                    <span>{formatTimestamp(doc.updatedAt)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    {doc.shares > 0 && (
+                                                    {doc.collaborators?.length > 0 && (
                                                         <span className="bg-slate-800 px-1.5 py-0.5 rounded text-slate-400 font-medium">
-                                                            {doc.shares} shares
+                                                            {doc.collaborators.length} collaborators
                                                         </span>
                                                     )}
-                                                    <div className="h-5 w-5 flex items-center justify-center rounded-full bg-slate-800 text-[8px] font-bold text-slate-400" title={`Owner: ${doc.ownerInitials}`}>
-                                                        {doc.ownerInitials}
+                                                    <div className="h-5 w-5 flex items-center justify-center rounded-full bg-slate-800 text-[8px] font-bold text-slate-400" title={`Owner: ${getOwnerName(doc)}`}>
+                                                        {getOwnerInitials(doc)}
                                                     </div>
                                                 </div>
                                             </div>
@@ -377,7 +422,7 @@ const Dashboard = () => {
                     )}
 
                     {/* View 2: Shared with Me Grid */}
-                    {activeTab === 'shared' && (
+                    {activeTab === 'shared' && !docsLoading && (
                         <>
                             <div className="mb-6">
                                 <h1 className="text-xl font-bold tracking-tight text-slate-100 font-display">Shared with Me</h1>
@@ -394,8 +439,8 @@ const Dashboard = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {activeList.map((doc) => (
                                         <div
-                                            key={doc.id}
-                                            onClick={() => navigate(`/document/${doc.id}`)}
+                                            key={doc._id}
+                                            onClick={() => navigate(`/document/${doc._id}`)}
                                             className="border border-slate-800 bg-slate-900/50 hover:bg-slate-900/80 hover:border-slate-700 rounded-lg p-5 transition flex flex-col justify-between h-40 cursor-pointer shadow-sm group"
                                         >
                                             <div>
@@ -411,21 +456,21 @@ const Dashboard = () => {
                                                     </span>
                                                 </div>
                                                 <p className="mt-2 text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                                                    {doc.content}
+                                                    {formatSnippet(doc.content)}
                                                 </p>
                                             </div>
 
                                             <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500">
                                                 <div className="flex items-center gap-1">
                                                     <Calendar size={11} />
-                                                    <span>{doc.updatedAt}</span>
+                                                    <span>{formatTimestamp(doc.updatedAt)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <span className="bg-slate-800 px-1.5 py-0.5 rounded text-slate-400 font-medium">
-                                                        {doc.shares} shares
+                                                        {doc.collaborators?.length || 0} shares
                                                     </span>
-                                                    <div className="h-5 w-5 flex items-center justify-center rounded-full bg-purple-900 text-[8px] font-bold text-purple-300" title={`Owner initials: ${doc.ownerInitials}`}>
-                                                        {doc.ownerInitials}
+                                                    <div className="h-5 w-5 flex items-center justify-center rounded-full bg-purple-950 text-[8px] font-bold text-purple-300" title={`Owner: ${getOwnerName(doc)}`}>
+                                                        {getOwnerInitials(doc)}
                                                     </div>
                                                 </div>
                                             </div>
@@ -483,14 +528,14 @@ const Dashboard = () => {
                                                     </div>
                                                 </div>
                                                 <p className="mt-2 text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
-                                                    {doc.content}
+                                                    {formatSnippet(doc.content)}
                                                 </p>
                                             </div>
 
                                             <div className="mt-4 pt-3 border-t border-slate-900 flex items-center justify-between text-[10px] text-slate-600">
                                                 <div className="flex items-center gap-1">
                                                     <Calendar size={11} />
-                                                    <span>{doc.updatedAt}</span>
+                                                    <span>{formatTimestamp(doc.updatedAt)}</span>
                                                 </div>
                                                 <span className="text-[9px] uppercase tracking-wider font-semibold text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded">
                                                     Trashed
@@ -540,7 +585,7 @@ const Dashboard = () => {
                                                 type="email"
                                                 disabled
                                                 value={user?.email || 'mern@example.com'}
-                                                className="w-full rounded border border-slate-850 bg-slate-950/40 py-2 px-3 text-xs text-slate-600 cursor-not-allowed outline-none"
+                                                className="w-full rounded border border-slate-855 bg-slate-955/40 py-2 px-3 text-xs text-slate-600 cursor-not-allowed outline-none"
                                             />
                                         </div>
                                     </div>
@@ -557,7 +602,7 @@ const Dashboard = () => {
                                         <label className={`border rounded-lg p-4 flex flex-col justify-between h-24 cursor-pointer transition select-none ${
                                             settingsTheme === 'deep-obsidian' 
                                                 ? 'border-blue-500 bg-slate-900/80 text-slate-100' 
-                                                : 'border-slate-800 bg-slate-950/20 text-slate-400 hover:border-slate-700'
+                                                : 'border-slate-800 bg-slate-955/20 text-slate-400 hover:border-slate-700'
                                         }`}>
                                             <input 
                                                 type="radio" 
@@ -574,7 +619,7 @@ const Dashboard = () => {
                                         <label className={`border rounded-lg p-4 flex flex-col justify-between h-24 cursor-pointer transition select-none ${
                                             settingsTheme === 'classic-dark' 
                                                 ? 'border-blue-500 bg-slate-900/80 text-slate-100' 
-                                                : 'border-slate-800 bg-slate-950/20 text-slate-400 hover:border-slate-700'
+                                                : 'border-slate-800 bg-slate-955/20 text-slate-400 hover:border-slate-700'
                                         }`}>
                                             <input 
                                                 type="radio" 
@@ -591,7 +636,7 @@ const Dashboard = () => {
                                         <label className={`border rounded-lg p-4 flex flex-col justify-between h-24 cursor-pointer transition select-none ${
                                             settingsTheme === 'monochrome' 
                                                 ? 'border-blue-500 bg-slate-900/80 text-slate-100' 
-                                                : 'border-slate-800 bg-slate-950/20 text-slate-400 hover:border-slate-700'
+                                                : 'border-slate-800 bg-slate-955/20 text-slate-400 hover:border-slate-700'
                                         }`}>
                                             <input 
                                                 type="radio" 
