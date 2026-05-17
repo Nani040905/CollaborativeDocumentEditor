@@ -12,7 +12,7 @@ import useThemeStore from '../../store/useThemeStore';
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { user, logout } = useAuthStore();
+    const { user, logout, updateProfile } = useAuthStore();
     const { 
         documents: dbDocuments, 
         fetchDocuments, 
@@ -61,6 +61,20 @@ const Dashboard = () => {
         } else {
             localStorage.setItem('mock_trash', JSON.stringify(defaultTrash));
             setTrashDocuments(defaultTrash);
+        }
+
+        // Load document preference states from LocalStorage
+        const savedAutosave = localStorage.getItem('settings_autosave');
+        if (savedAutosave !== null) {
+            setEnableAutosave(JSON.parse(savedAutosave));
+        }
+        const savedPresence = localStorage.getItem('settings_presence');
+        if (savedPresence !== null) {
+            setPresenceBubbles(JSON.parse(savedPresence));
+        }
+        const savedTheme = localStorage.getItem('settings_theme');
+        if (savedTheme !== null) {
+            setSettingsTheme(savedTheme);
         }
     }, [user, fetchDocuments]);
 
@@ -189,10 +203,26 @@ const Dashboard = () => {
         localStorage.setItem('mock_trash', JSON.stringify([]));
     };
 
-    const handleSaveSettings = (e) => {
+    const handleSaveSettings = async (e) => {
         e.preventDefault();
-        setSettingsSaved(true);
-        setTimeout(() => setSettingsSaved(false), 3000);
+        setSettingsSaved(false);
+
+        try {
+            // 1. Save user profile name in the live MERN database!
+            if (settingsName.trim() && settingsName.trim() !== user?.name) {
+                await updateProfile(settingsName.trim());
+            }
+
+            // 2. Persist document preference settings inside localStorage!
+            localStorage.setItem('settings_autosave', JSON.stringify(enableAutosave));
+            localStorage.setItem('settings_presence', JSON.stringify(presenceBubbles));
+            localStorage.setItem('settings_theme', settingsTheme);
+
+            setSettingsSaved(true);
+            setTimeout(() => setSettingsSaved(false), 3000);
+        } catch (err) {
+            console.error("Failed to save settings:", err);
+        }
     };
 
     const handleLogout = async () => {

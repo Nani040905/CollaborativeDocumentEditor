@@ -89,6 +89,22 @@ const useDocStore = create((set, get) => ({
         }
     },
 
+    updateContent: async (id, content) => {
+        try {
+            const res = await axios.put(`${API_URL}/documents/${id}/content`, { content }, { withCredentials: true });
+            set((state) => ({
+                documents: state.documents.map((doc) => 
+                    doc._id === id ? { ...doc, content } : doc
+                ),
+                currentDocument: state.currentDocument?._id === id ? res.data : state.currentDocument
+            }));
+            return { success: true };
+        } catch (err) {
+            set({ error: 'Failed to save document content' });
+            return { success: false };
+        }
+    },
+
     clearCurrentDocument: () => set({ currentDocument: null })
 }));
 

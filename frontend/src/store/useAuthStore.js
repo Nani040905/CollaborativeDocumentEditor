@@ -58,6 +58,19 @@ const useAuthStore = create((set) => ({
         }
     },
 
+    updateProfile: async (name) => {
+        set({ loading: true, error: null });
+        try {
+            const res = await axios.put(`${API_URL}/auth/profile`, { name });
+            set({ user: res.data.user, loading: false });
+            return { success: true };
+        } catch (err) {
+            const msg = err.response?.data?.message || 'Profile update failed';
+            set({ error: msg, loading: false });
+            return { success: false, error: msg };
+        }
+    },
+
     clearErrors: () => set({ error: null })
 }));
 

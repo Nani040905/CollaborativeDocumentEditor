@@ -6,7 +6,8 @@ import {
     getDocumentById,
     updateDocumentTitle,
     deleteDocument,
-    addCollaborator
+    addCollaborator,
+    updateDocumentContent
 } from '../controllers/docController.js';
 
 const router = express.Router();
@@ -18,6 +19,7 @@ router.post('/', createDocument);
 router.get('/', getDocuments);
 router.get('/:id', getDocumentById);
 router.put('/:id/title', updateDocumentTitle);
+router.put('/:id/content', updateDocumentContent);
 router.delete('/:id', deleteDocument);
 router.post('/:id/collaborators', addCollaborator);
 

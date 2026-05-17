@@ -6,7 +6,7 @@ import Editor from './Editor';
 import { 
     ArrowLeft, Check, CloudLightning, RefreshCw, Share2, 
     ChevronRight, AlignLeft, Copy, Mail, UserPlus,
-    Sun, Moon
+    Sun, Moon, Save
 } from 'lucide-react';
 import useThemeStore from '../../store/useThemeStore';
 
@@ -19,6 +19,7 @@ const DocumentWorkspace = () => {
         fetchDocumentById, 
         updateTitleInDashboard, 
         inviteCollaborator, 
+        updateContent,
         loading: docsLoading 
     } = useDocStore();
     const { theme, toggleTheme } = useThemeStore();
@@ -34,12 +35,31 @@ const DocumentWorkspace = () => {
     const [inviteMessage, setInviteMessage] = useState('');
     const [inviteSuccess, setInviteSuccess] = useState(false);
 
+    // Document preference controls loaded from user Settings
+    const [autosaveEnabled, setAutosaveEnabled] = useState(true);
+    const [showPresence, setShowPresence] = useState(true);
+    const saveTimeoutRef = useRef(null);
+    const editorContentRef = useRef('');
+
+    // Load visual settings on mount
+    useEffect(() => {
+        const savedAutosave = localStorage.getItem('settings_autosave');
+        if (savedAutosave !== null) {
+            setAutosaveEnabled(JSON.parse(savedAutosave));
+        }
+        const savedPresence = localStorage.getItem('settings_presence');
+        if (savedPresence !== null) {
+            setShowPresence(JSON.parse(savedPresence));
+        }
+    }, []);
+
     // Fetch document details from live database on load
     useEffect(() => {
         fetchDocumentById(id)
             .then((doc) => {
                 if (doc) {
                     setTitle(doc.title);
+                    editorContentRef.current = doc.content || '';
                 }
             })
             .catch(() => {
@@ -59,13 +79,37 @@ const DocumentWorkspace = () => {
     const handleTitleChange = async (e) => {
         const newTitle = e.target.value;
         setTitle(newTitle);
-        setSaveStatus('Saving...');
+        if (currentDocument) {
+            await updateTitleInDashboard(id, newTitle);
+        }
+    };
 
+    // Auto-save rich-text edits back to MongoDB (debounced to buffer requests)
+    const handleEditorChange = (content) => {
+        editorContentRef.current = content;
+        if (!autosaveEnabled) return;
+
+        setSaveStatus('Saving...');
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+        saveTimeoutRef.current = setTimeout(async () => {
+            try {
+                await updateContent(id, content);
+                setSaveStatus('All changes saved');
+            } catch (err) {
+                setSaveStatus('Error saving');
+            }
+        }, 1000);
+    };
+
+    // Manual save handler for when Collaborative Autosave is turned off in Settings
+    const handleManualSave = async () => {
+        setSaveStatus('Saving...');
         try {
-            await updateTitleInDashboard(id, newTitle.trim() || 'Untitled Document');
+            await updateContent(id, editorContentRef.current);
             setSaveStatus('All changes saved');
         } catch (err) {
-            setSaveStatus('Error saving title');
+            setSaveStatus('Error saving');
         }
     };
 
@@ -137,7 +181,7 @@ const DocumentWorkspace = () => {
                 {/* Collaboration Presence Indicators */}
                 <div className="flex items-center gap-4">
                     {/* User Presence Circles */}
-                    {currentDocument && (
+                    {showPresence && currentDocument && (
                         <div className="flex items-center -space-x-1.5" title="Collaborators active in workspace">
                             {/* Document Owner */}
                             <div className="h-6 w-6 rounded-full border border-slate-900 bg-blue-600 text-[9px] font-bold text-white flex items-center justify-center cursor-default" title={`Owner: ${currentDocument.owner?.name}`}>
@@ -161,6 +205,17 @@ const DocumentWorkspace = () => {
                     >
                         {theme === 'dark' ? <Moon size={13} className="text-blue-400" /> : <Sun size={13} className="text-yellow-500" />}
                     </button>
+
+                    {!autosaveEnabled && (
+                        <button
+                            onClick={handleManualSave}
+                            className="flex items-center gap-1.5 rounded bg-blue-600 hover:bg-blue-750 px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 cursor-pointer select-none"
+                            title="Save Changes to Cloud"
+                        >
+                            <Save size={13} />
+                            <span>Save</span>
+                        </button>
+                    )}
 
                     {/* Share Trigger */}
                     <div className="relative">
@@ -277,10 +332,7 @@ const DocumentWorkspace = () => {
                     ) : (
                         <Editor 
                             value={currentDocument?.content} 
-                            onChange={(content, delta) => {
-                                // Real-time delta updates are buffered here and will synchronize
-                                // over WebSockets in Part 9!
-                            }}
+                            onChange={handleEditorChange}
                         />
                     )}
                 </main>
