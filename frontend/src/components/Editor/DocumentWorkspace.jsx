@@ -1,97 +1,102 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
+import useAuthStore from '../../store/useAuthStore';
+import useDocStore from '../../store/useDocStore';
+import Editor from './Editor';
 import { 
     ArrowLeft, Check, CloudLightning, RefreshCw, Share2, 
-    ChevronRight, AlignLeft, Bold, Italic, List, Code, Copy 
+    ChevronRight, AlignLeft, Copy, Mail, UserPlus
 } from 'lucide-react';
 
 const DocumentWorkspace = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuthStore();
+    const { 
+        currentDocument, 
+        fetchDocumentById, 
+        updateTitleInDashboard, 
+        inviteCollaborator, 
+        loading: docsLoading 
+    } = useDocStore();
+
     const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
     const [saveStatus, setSaveStatus] = useState('All changes saved');
     const [showShare, setShowShare] = useState(false);
     const [showOutline, setShowOutline] = useState(true);
     const [copied, setCopied] = useState(false);
-    const saveTimeoutRef = useRef(null);
+    
+    // Collaborator invite states
+    const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteMessage, setInviteMessage] = useState('');
+    const [inviteSuccess, setInviteSuccess] = useState(false);
 
-    // Fetch document details from localStorage on load
+    // Fetch document details from live database on load
     useEffect(() => {
-        const stored = localStorage.getItem('mock_documents');
-        if (stored) {
-            const list = JSON.parse(stored);
-            const found = list.find(doc => doc.id === id);
-            if (found) {
-                setTitle(found.title);
-                setContent(found.content);
-            } else {
-                // If ID is not found, navigate back to dashboard
+        fetchDocumentById(id)
+            .then((doc) => {
+                if (doc) {
+                    setTitle(doc.title);
+                }
+            })
+            .catch(() => {
+                // If denied or not found, return to dashboard
                 navigate('/dashboard');
-            }
-        } else {
-            navigate('/dashboard');
+            });
+    }, [id, fetchDocumentById, navigate]);
+
+    // Update internal state title once document compiles
+    useEffect(() => {
+        if (currentDocument) {
+            setTitle(currentDocument.title);
         }
-    }, [id, navigate]);
+    }, [currentDocument]);
 
-    // Handle document typing updates with simulation of autosave status
-    const handleContentChange = (e) => {
-        const newText = e.target.value;
-        setContent(newText);
-        setSaveStatus('Saving...');
-
-        // Clear existing timeout
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-
-        // Trigger autosave action after 800ms
-        saveTimeoutRef.current = setTimeout(() => {
-            const stored = localStorage.getItem('mock_documents');
-            if (stored) {
-                const list = JSON.parse(stored);
-                const updated = list.map(doc => {
-                    if (doc.id === id) {
-                        return { ...doc, content: newText, updatedAt: 'Just now' };
-                    }
-                    return doc;
-                });
-                localStorage.setItem('mock_documents', JSON.stringify(updated));
-            }
-            setSaveStatus('All changes saved');
-        }, 800);
-    };
-
-    // Handle title updates inline
-    const handleTitleChange = (e) => {
+    // Handle title updates inline back to server
+    const handleTitleChange = async (e) => {
         const newTitle = e.target.value;
         setTitle(newTitle);
         setSaveStatus('Saving...');
 
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-
-        saveTimeoutRef.current = setTimeout(() => {
-            const stored = localStorage.getItem('mock_documents');
-            if (stored) {
-                const list = JSON.parse(stored);
-                const updated = list.map(doc => {
-                    if (doc.id === id) {
-                        return { ...doc, title: newTitle.trim() || 'Untitled Document', updatedAt: 'Just now' };
-                    }
-                    return doc;
-                });
-                localStorage.setItem('mock_documents', JSON.stringify(updated));
-            }
+        try {
+            await updateTitleInDashboard(id, newTitle.trim() || 'Untitled Document');
             setSaveStatus('All changes saved');
-        }, 800);
+        } catch (err) {
+            setSaveStatus('Error saving title');
+        }
     };
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(window.location.href);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    // Invite collaborator handler
+    const handleInviteCollaborator = async (e) => {
+        e.preventDefault();
+        if (!inviteEmail.trim()) return;
+
+        setInviteMessage('Sending invitation...');
+        const res = await inviteCollaborator(id, inviteEmail.trim().toLowerCase());
+        
+        if (res.success) {
+            setInviteSuccess(true);
+            setInviteMessage(res.message || 'Collaborator added successfully!');
+            setInviteEmail('');
+            // Refresh document details to populate new collaborator lists
+            fetchDocumentById(id);
+        } else {
+            setInviteSuccess(false);
+            setInviteMessage(res.error || 'Failed to add collaborator.');
+        }
+
+        setTimeout(() => setInviteMessage(''), 4000);
+    };
+
+    const getCollaboratorInitials = (c) => {
+        if (c.name) return c.name.substring(0, 2).toUpperCase();
+        return 'US';
     };
 
     return (
@@ -115,9 +120,9 @@ const DocumentWorkspace = () => {
                             className="bg-transparent border-none text-sm font-semibold text-slate-100 outline-none w-full focus:ring-1 focus:ring-slate-800 rounded px-1 py-0.5"
                             placeholder="Untitled Document"
                         />
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-400 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800/80 text-[10px] text-slate-400 whitespace-nowrap">
                             {saveStatus === 'Saving...' ? (
-                                <RefreshCw size={10} className="animate-spin text-blue-400" />
+                                <RefreshCw size={10} className="animate-spin text-blue-450" />
                             ) : (
                                 <Check size={10} className="text-green-500" />
                             )}
@@ -126,49 +131,81 @@ const DocumentWorkspace = () => {
                     </div>
                 </div>
 
-                {/* Collaboration & Sharing Widget */}
+                {/* Collaboration Presence Indicators */}
                 <div className="flex items-center gap-4">
                     {/* User Presence Circles */}
-                    <div className="flex items-center -space-x-1.5">
-                        <div className="h-6 w-6 rounded-full border border-slate-900 bg-emerald-700 text-[9px] font-bold text-white flex items-center justify-center cursor-default" title="Jane Doe (Active)">
-                            JD
+                    {currentDocument && (
+                        <div className="flex items-center -space-x-1.5" title="Collaborators active in workspace">
+                            {/* Document Owner */}
+                            <div className="h-6 w-6 rounded-full border border-slate-900 bg-blue-600 text-[9px] font-bold text-white flex items-center justify-center cursor-default" title={`Owner: ${currentDocument.owner?.name}`}>
+                                {currentDocument.owner?.name ? currentDocument.owner.name.substring(0, 2).toUpperCase() : 'ME'}
+                            </div>
+
+                            {/* Registered Collaborators */}
+                            {currentDocument.collaborators?.map((c) => (
+                                <div key={c._id} className="h-6 w-6 rounded-full border border-slate-900 bg-purple-750 text-[9px] font-bold text-white flex items-center justify-center cursor-default" title={`Collaborator: ${c.name}`}>
+                                    {getCollaboratorInitials(c)}
+                                </div>
+                            ))}
                         </div>
-                        <div className="h-6 w-6 rounded-full border border-slate-900 bg-orange-700 text-[9px] font-bold text-white flex items-center justify-center cursor-default" title="Sarah King (Active)">
-                            SK
-                        </div>
-                        <div className="h-6 w-6 rounded-full border border-slate-900 bg-purple-700 text-[9px] font-bold text-white flex items-center justify-center cursor-default" title="Alex Miller (Away)">
-                            AM
-                        </div>
-                    </div>
+                    )}
 
                     {/* Share Trigger */}
                     <div className="relative">
                         <button
                             onClick={() => setShowShare(!showShare)}
-                            className="flex items-center gap-1.5 rounded border border-slate-800 bg-slate-900 hover:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300 transition cursor-pointer"
+                            className="flex items-center gap-1.5 rounded border border-slate-800 bg-slate-900 hover:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-350 transition cursor-pointer"
                         >
                             <Share2 size={13} />
                             <span>Share</span>
                         </button>
 
                         {showShare && (
-                            <div className="absolute right-0 mt-2 w-80 rounded-lg border border-slate-800 bg-slate-900 p-4 shadow-md z-30">
-                                <h4 className="text-xs font-semibold text-slate-200 mb-2">Share Link</h4>
-                                <p className="text-[10px] text-slate-500 mb-3">Copy this workspace URL to collaborate in real-time.</p>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        readOnly
-                                        value={window.location.href}
-                                        className="flex-1 rounded border border-slate-800 bg-slate-950 px-2 py-1 text-[10px] text-slate-400 select-all outline-none"
-                                    />
-                                    <button
-                                        onClick={handleCopyLink}
-                                        className="p-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white transition cursor-pointer"
-                                        title="Copy link"
-                                    >
-                                        {copied ? <Check size={14} /> : <Copy size={14} />}
-                                    </button>
+                            <div className="absolute right-0 mt-2 w-80 rounded-lg border border-slate-800 bg-slate-900 p-4 shadow-md z-30 space-y-4">
+                                <div>
+                                    <h4 className="text-xs font-semibold text-slate-200 mb-1">Share Workspace URL</h4>
+                                    <p className="text-[9px] text-slate-500 mb-2">Copy this workspace URL to collaborate in real-time.</p>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            value={window.location.href}
+                                            className="flex-1 rounded border border-slate-800 bg-slate-950 px-2 py-1 text-[10px] text-slate-400 select-all outline-none"
+                                        />
+                                        <button
+                                            onClick={handleCopyLink}
+                                            className="p-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white transition cursor-pointer"
+                                            title="Copy link"
+                                        >
+                                            {copied ? <Check size={14} /> : <Copy size={14} />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-slate-800 pt-3">
+                                    <h4 className="text-xs font-semibold text-slate-200 mb-1">Invite Collaborator</h4>
+                                    <p className="text-[9px] text-slate-500 mb-2">Add a user to this workspace via their registered email.</p>
+                                    <form onSubmit={handleInviteCollaborator} className="flex gap-2">
+                                        <input
+                                            type="email"
+                                            required
+                                            placeholder="user@example.com"
+                                            value={inviteEmail}
+                                            onChange={(e) => setInviteEmail(e.target.value)}
+                                            className="flex-1 rounded border border-slate-800 bg-slate-950 px-2 py-1 text-xs text-slate-200 outline-none"
+                                        />
+                                        <button
+                                            type="submit"
+                                            className="rounded bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 text-xs font-semibold transition cursor-pointer"
+                                        >
+                                            Invite
+                                        </button>
+                                    </form>
+                                    {inviteMessage && (
+                                        <p className={`text-[9px] mt-2 font-semibold ${inviteSuccess ? 'text-green-400' : 'text-red-400'}`}>
+                                            {inviteMessage}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -180,26 +217,26 @@ const DocumentWorkspace = () => {
             <div className="flex-1 flex overflow-hidden">
                 {/* Outline Left Sidebar */}
                 {showOutline && (
-                    <aside className="w-56 border-r border-slate-800 bg-slate-900/40 p-4 space-y-4 overflow-y-auto hidden md:block">
-                        <div className="flex items-center gap-1 text-slate-400">
+                    <aside className="w-56 border-r border-slate-800 bg-slate-900/40 p-4 space-y-4 overflow-y-auto hidden md:block select-none">
+                        <div className="flex items-center gap-1.5 text-slate-450">
                             <AlignLeft size={14} />
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Document Outline</span>
+                            <span className="text-[9px] font-bold uppercase tracking-wider">Document Outline</span>
                         </div>
                         <ul className="text-xs space-y-2">
-                            <li className="flex items-center gap-1 text-slate-300 hover:text-slate-100 cursor-pointer">
-                                <ChevronRight size={12} className="text-slate-600" />
+                            <li className="flex items-center gap-1 text-slate-350 hover:text-slate-100 cursor-pointer">
+                                <ChevronRight size={12} className="text-slate-650" />
                                 <span className="font-medium line-clamp-1">1. Summary & Intro</span>
                             </li>
                             <li className="flex items-center gap-1 text-slate-500 hover:text-slate-300 cursor-pointer pl-2">
                                 <ChevronRight size={12} className="text-slate-700" />
                                 <span className="line-clamp-1">Scope & Parameters</span>
                             </li>
-                            <li className="flex items-center gap-1 text-slate-300 hover:text-slate-100 cursor-pointer">
-                                <ChevronRight size={12} className="text-slate-600" />
+                            <li className="flex items-center gap-1 text-slate-350 hover:text-slate-100 cursor-pointer">
+                                <ChevronRight size={12} className="text-slate-650" />
                                 <span className="font-medium line-clamp-1">2. Architecture Blueprint</span>
                             </li>
-                            <li className="flex items-center gap-1 text-slate-300 hover:text-slate-100 cursor-pointer">
-                                <ChevronRight size={12} className="text-slate-600" />
+                            <li className="flex items-center gap-1 text-slate-350 hover:text-slate-100 cursor-pointer">
+                                <ChevronRight size={12} className="text-slate-650" />
                                 <span className="font-medium line-clamp-1">3. Action Items</span>
                             </li>
                         </ul>
@@ -207,40 +244,33 @@ const DocumentWorkspace = () => {
                 )}
 
                 {/* Plain Rich Editor Panel */}
-                <main className="flex-1 flex flex-col bg-slate-950">
-                    {/* Plain Text formatting controls */}
-                    <div className="h-10 border-b border-slate-850 px-6 flex items-center gap-1 bg-slate-950/20 text-slate-400">
+                <main className="flex-1 flex flex-col bg-slate-950 overflow-hidden">
+                    {/* Outline toggle bar */}
+                    <div className="h-10 border-b border-slate-850 px-6 flex items-center bg-slate-950/20 text-slate-450 select-none">
                         <button 
                             onClick={() => setShowOutline(!showOutline)}
-                            className={`p-1 hover:bg-slate-800 rounded transition cursor-pointer ${showOutline ? 'text-blue-400 bg-slate-900/60' : ''}`}
+                            className={`p-1 hover:bg-slate-800 rounded transition cursor-pointer ${showOutline ? 'text-blue-450 bg-slate-900/60' : ''}`}
                             title="Toggle Outline Panel"
                         >
                             <AlignLeft size={14} />
                         </button>
-                        <div className="h-4 w-px bg-slate-800 mx-2"></div>
-                        <button className="p-1 hover:bg-slate-800 rounded transition text-slate-500 cursor-default" title="Bold">
-                            <Bold size={14} />
-                        </button>
-                        <button className="p-1 hover:bg-slate-800 rounded transition text-slate-500 cursor-default" title="Italic">
-                            <Italic size={14} />
-                        </button>
-                        <button className="p-1 hover:bg-slate-800 rounded transition text-slate-500 cursor-default" title="Bullet List">
-                            <List size={14} />
-                        </button>
-                        <button className="p-1 hover:bg-slate-800 rounded transition text-slate-500 cursor-default" title="Code Block">
-                            <Code size={14} />
-                        </button>
                     </div>
 
-                    {/* Clean Textarea Editing Canvas */}
-                    <div className="flex-1 p-8 max-w-3xl w-full mx-auto overflow-y-auto">
-                        <textarea
-                            value={content}
-                            onChange={handleContentChange}
-                            className="w-full h-full bg-transparent border-none outline-none resize-none text-slate-200 text-sm leading-relaxed placeholder-slate-700 font-sans"
-                            placeholder="Write your distraction-free document contents here..."
+                    {/* Quill Rich Text Editor */}
+                    {docsLoading ? (
+                        <div className="flex justify-center items-center flex-1 text-xs font-semibold text-slate-500">
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-500 border-t-transparent mr-2"></div>
+                            <span>Connecting editor to MERN cluster...</span>
+                        </div>
+                    ) : (
+                        <Editor 
+                            value={currentDocument?.content} 
+                            onChange={(content, delta) => {
+                                // Real-time delta updates are buffered here and will synchronize
+                                // over WebSockets in Part 9!
+                            }}
                         />
-                    </div>
+                    )}
                 </main>
             </div>
         </div>
