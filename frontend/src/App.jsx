@@ -4,6 +4,7 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
 import DocumentWorkspace from './components/Editor/DocumentWorkspace';
+import JoinDocument from './components/Editor/JoinDocument';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import ErrorPage from './components/Common/ErrorPage';
 import useAuthStore from './store/store-placeholder';
@@ -50,6 +51,14 @@ function App() {
                     element={
                         <ProtectedRoute>
                             <DocumentWorkspace />
+                        </ProtectedRoute>
+                    } 
+                />
+                <Route 
+                    path="/join/:id" 
+                    element={
+                        <ProtectedRoute>
+                            <JoinDocument />
                         </ProtectedRoute>
                     } 
                 />

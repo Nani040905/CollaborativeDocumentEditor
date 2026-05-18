@@ -378,4 +378,71 @@ body.light-mode .ql-editor pre.ql-syntax {
   padding: 6px !important;
 }
 
+/* Real-time collaborator avatar adjustments */
+body.light-mode .collaborator-avatar {
+  border-color: #f8fafc !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* Premium Light Mode Styles for Auth pages (Login & Register) */
+body.light-mode .flex.h-screen.w-screen.bg-slate-950 {
+  background-color: #f8fafc !important;
+  background-image: radial-gradient(at 0% 0%, rgba(226, 232, 240, 0.4) 0, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(241, 245, 249, 0.8) 0, transparent 50%) !important;
+}
+
+body.light-mode .flex.h-screen.w-screen.bg-slate-950 .border-slate-800,
+body.light-mode .flex.h-screen.w-screen.bg-slate-950 .border {
+  border-color: #e2e8f0 !important;
+}
+
+body.light-mode .flex.h-screen.w-screen.bg-slate-950 .bg-slate-900\/60 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-mode .flex.h-screen.w-screen.bg-slate-950 .text-slate-150,
+body.light-mode .flex.h-screen.w-screen.bg-slate-950 .text-slate-100,
+body.light-mode .flex.h-screen.w-screen.bg-slate-950 h2 {
+  color: #0f172a !important;
+}
+
+body.light-mode .flex.h-screen.w-screen.bg-slate-950 .text-slate-400 {
+  color: #475569 !important;
+}
+
+body.light-mode .flex.h-screen.w-screen.bg-slate-950 .bg-slate-950\/80 {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light-mode .flex.h-screen.w-screen.bg-slate-950 input {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light-mode .flex.h-screen.w-screen.bg-slate-950 input::placeholder {
+  color: #94a3b8 !important;
+}
+
+body.light-mode .flex.h-screen.w-screen.bg-slate-950 .text-slate-200 {
+  color: #0f172a !important;
+}
+
+body.light-mode .flex.h-screen.w-screen.bg-slate-950 .text-slate-500 {
+  color: #64748b !important;
+}
+
+
 

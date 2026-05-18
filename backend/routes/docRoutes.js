@@ -7,7 +7,8 @@ import {
     updateDocumentTitle,
     deleteDocument,
     addCollaborator,
-    updateDocumentContent
+    updateDocumentContent,
+    joinDocument
 } from '../controllers/docController.js';
 
 const router = express.Router();
@@ -23,5 +24,6 @@ router.put('/:id/title', updateDocumentTitle);   // Rename a specific document
 router.put('/:id/content', updateDocumentContent); // Save rich-text delta contents
 router.delete('/:id', deleteDocument);           // Delete a document (Restricted to Owner)
 router.post('/:id/collaborators', addCollaborator); // Invite a collaborator by email lookup
+router.post('/:id/join', joinDocument);           // Join a document using a shareable invite link
 
 export default router;
