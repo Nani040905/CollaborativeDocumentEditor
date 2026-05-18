@@ -24,9 +24,16 @@ const Editor = ({ value, onChange, onInit }) => {
     // Tracks active Quill editor instance across renders
     const quillInstanceRef = useRef(null);
 
+    // Keep a stable ref of onInit to avoid recreating callback ref and triggering infinite loops
+    const onInitRef = useRef(onInit);
+    useEffect(() => {
+        onInitRef.current = onInit;
+    }, [onInit]);
+
     // Using a callback ref is the safest way to target DOM mounting in React
     const wrapperRef = useCallback((wrapper) => {
         if (wrapper == null) return;
+        if (quillInstanceRef.current) return; // Prevent duplicate bootstrapping in React StrictMode
 
         // Reset and clear any existing elements to prevent the duplicate toolbar bug
         wrapper.innerHTML = '';
@@ -46,10 +53,10 @@ const Editor = ({ value, onChange, onInit }) => {
         quillInstanceRef.current = q;
         
         // Pass instance back to parent component (Crucial for Websocket hooks)
-        if (onInit) {
-            onInit(q);
+        if (onInitRef.current) {
+            onInitRef.current(q);
         }
-    }, [onInit]);
+    }, []); // Empty dependency array ensures this is created exactly once!
 
     // Handle updates when content is modified
     useEffect(() => {

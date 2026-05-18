@@ -19,6 +19,15 @@ const socketHandler = (io) => {
             socket.broadcast.to(documentId).emit('user-joined', user);
         });
 
+        // Listen for editor rich-text delta synchronization packets
+        socket.on('send-changes', (delta) => {
+            const { documentId } = socket;
+            if (!documentId) return;
+
+            // Broadcast the operational delta back out to other room occupants (avoiding echoing back to the typing client)
+            socket.broadcast.to(documentId).emit('receive-changes', delta);
+        });
+
         // Handle connection drop-offs
         socket.on('disconnect', () => {
             console.log(`[Socket Disconnected] Socket ID: ${socket.id}`);

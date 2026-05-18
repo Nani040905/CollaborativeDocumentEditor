@@ -9,6 +9,7 @@ import {
     Sun, Moon, Save
 } from 'lucide-react';
 import useThemeStore from '../../store/useThemeStore';
+import { useSocket } from '../../hooks/useSocket';
 
 /**
  * Collaborative Document Editor Workspace.
@@ -28,6 +29,12 @@ const DocumentWorkspace = () => {
         loading: docsLoading 
     } = useDocStore();
     const { theme, toggleTheme } = useThemeStore();
+
+    // Establish bidirectional WebSocket channel tagged to this specific document ID
+    const { socket, connected } = useSocket(id, user);
+    
+    // Store Quill editor instance references to apply remote Deltas dynamically
+    const [quill, setQuill] = useState(null);
 
     // Editor component state parameters
     const [title, setTitle] = useState('');
@@ -74,6 +81,22 @@ const DocumentWorkspace = () => {
             });
     }, [id, fetchDocumentById, navigate]);
 
+    // Handle incoming WebSocket operations (receive-changes)
+    useEffect(() => {
+        if (socket == null || quill == null) return;
+
+        const handleReceiveChanges = (delta) => {
+            // Apply delta updates instantly into Quill editor view
+            quill.updateContents(delta);
+        };
+
+        socket.on('receive-changes', handleReceiveChanges);
+
+        return () => {
+            socket.off('receive-changes', handleReceiveChanges);
+        };
+    }, [socket, quill]);
+
     // Update internal state title once document compiles
     useEffect(() => {
         if (currentDocument) {
@@ -91,8 +114,14 @@ const DocumentWorkspace = () => {
     };
 
     // Auto-save rich-text edits back to MongoDB (debounced to buffer requests)
-    const handleEditorChange = (content) => {
+    const handleEditorChange = (content, delta) => {
         editorContentRef.current = content;
+
+        // Emit change operations to all other active editors in real-time
+        if (socket != null && delta) {
+            socket.emit('send-changes', delta);
+        }
+
         if (!autosaveEnabled) return;
 
         setSaveStatus('Saving...');
@@ -186,6 +215,19 @@ const DocumentWorkspace = () => {
 
                 {/* Collaboration Presence Indicators */}
                 <div className="flex items-center gap-4">
+                    {/* Live Sync Connection Status */}
+                    {connected ? (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold select-none">
+                            <CloudLightning size={12} className="animate-pulse text-emerald-450" />
+                            <span>Live Sync</span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-semibold animate-pulse select-none">
+                            <RefreshCw size={12} className="animate-spin text-amber-450" />
+                            <span>Reconnecting...</span>
+                        </div>
+                    )}
+
                     {/* User Presence Circles */}
                     {showPresence && currentDocument && (
                         <div className="flex items-center -space-x-1.5" title="Collaborators active in workspace">
@@ -227,7 +269,7 @@ const DocumentWorkspace = () => {
                     <div className="relative">
                         <button
                             onClick={() => setShowShare(!showShare)}
-                            className="flex items-center gap-1.5 rounded border border-slate-800 bg-slate-900 hover:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-350 transition cursor-pointer"
+                            className="flex items-center gap-1.5 rounded border border-slate-800 bg-slate-900 hover:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-355 transition cursor-pointer"
                         >
                             <Share2 size={13} />
                             <span>Share</span>
@@ -265,7 +307,7 @@ const DocumentWorkspace = () => {
                                             placeholder="user@example.com"
                                             value={inviteEmail}
                                             onChange={(e) => setInviteEmail(e.target.value)}
-                                            className="flex-1 rounded border border-slate-800 bg-slate-950 px-2 py-1 text-xs text-slate-200 outline-none"
+                                            className="flex-1 rounded border border-slate-800 bg-slate-955 px-2 py-1 text-xs text-slate-200 outline-none"
                                         />
                                         <button
                                             type="submit"
@@ -339,6 +381,7 @@ const DocumentWorkspace = () => {
                         <Editor 
                             value={currentDocument?.content} 
                             onChange={handleEditorChange}
+                            onInit={(instance) => setQuill(instance)}
                         />
                     )}
                 </main>
