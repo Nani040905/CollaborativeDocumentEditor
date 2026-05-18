@@ -5,8 +5,8 @@ import useDocStore from '../../store/useDocStore';
 import Editor from './Editor';
 import { 
     ArrowLeft, Check, CloudLightning, RefreshCw, Share2, 
-    ChevronRight, AlignLeft, Copy, Mail, UserPlus,
-    Sun, Moon, Save
+    Copy, Mail, UserPlus,
+    Sun, Moon, Save, AlertCircle
 } from 'lucide-react';
 import useThemeStore from '../../store/useThemeStore';
 import { useSocket } from '../../hooks/useSocket';
@@ -40,7 +40,6 @@ const DocumentWorkspace = () => {
     const [title, setTitle] = useState('');
     const [saveStatus, setSaveStatus] = useState('All changes saved');
     const [showShare, setShowShare] = useState(false);
-    const [showOutline, setShowOutline] = useState(true);
     const [copied, setCopied] = useState(false);
     
     // Collaborator invite states
@@ -122,27 +121,44 @@ const DocumentWorkspace = () => {
             socket.emit('send-changes', delta);
         }
 
-        if (!autosaveEnabled) return;
+        if (!autosaveEnabled) {
+            setSaveStatus('Changes pending');
+            return;
+        }
 
         setSaveStatus('Saving...');
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
         saveTimeoutRef.current = setTimeout(async () => {
             try {
-                await updateContent(id, content);
-                setSaveStatus('All changes saved');
+                // Prioritize high-performance WebSocket persistence to avoid HTTP overhead
+                if (socket != null && connected) {
+                    socket.emit('save-document', content);
+                    setSaveStatus('All changes saved');
+                } else {
+                    // Resilient HTTP REST API fallback if connection drops
+                    await updateContent(id, content);
+                    setSaveStatus('All changes saved');
+                }
             } catch (err) {
                 setSaveStatus('Error saving');
             }
-        }, 1000);
+        }, 1500); // 1.5 seconds typing pause debounce delay
     };
 
     // Manual save handler for when Collaborative Autosave is turned off in Settings
     const handleManualSave = async () => {
         setSaveStatus('Saving...');
         try {
-            await updateContent(id, editorContentRef.current);
-            setSaveStatus('All changes saved');
+            // Prioritize high-performance WebSocket persistence
+            if (socket != null && connected) {
+                socket.emit('save-document', editorContentRef.current);
+                setSaveStatus('All changes saved');
+            } else {
+                // Resilient fallback to REST API
+                await updateContent(id, editorContentRef.current);
+                setSaveStatus('All changes saved');
+            }
         } catch (err) {
             setSaveStatus('Error saving');
         }
@@ -182,14 +198,14 @@ const DocumentWorkspace = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen w-screen bg-slate-950 text-slate-200 overflow-hidden">
+        <div className="workspace-outer-wrapper flex flex-col h-screen w-screen bg-slate-950 text-slate-200 overflow-hidden">
             {/* Header Navigation */}
             <header className="h-14 border-b border-slate-800 bg-slate-900/60 px-6 flex items-center justify-between min-h-14">
                 <div className="flex items-center gap-4 flex-1">
                     <button 
-                        onClick={() => navigate('/dashboard')}
+                        onClick={() => navigate(-1)}
                         className="p-1 text-slate-400 hover:text-slate-200 rounded hover:bg-slate-800 transition cursor-pointer"
-                        title="Back to Dashboard"
+                        title="Go back"
                     >
                         <ArrowLeft size={16} />
                     </button>
@@ -202,9 +218,18 @@ const DocumentWorkspace = () => {
                             className="bg-transparent border-none text-sm font-semibold text-slate-100 outline-none w-full focus:ring-1 focus:ring-slate-800 rounded px-1 py-0.5"
                             placeholder="Untitled Document"
                         />
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800/80 text-[10px] text-slate-400 whitespace-nowrap">
+                        <div className={`save-status-badge flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] whitespace-nowrap transition-colors ${
+                            saveStatus === 'Saving...' ? 'bg-slate-800/80 text-slate-400' :
+                            saveStatus === 'Changes pending' ? 'bg-amber-500/10 border border-amber-500/30 text-amber-400 font-semibold' :
+                            saveStatus === 'Error saving' ? 'bg-red-500/10 border border-red-500/30 text-red-400 font-semibold' :
+                            'bg-slate-800/80 text-slate-400'
+                        }`}>
                             {saveStatus === 'Saving...' ? (
                                 <RefreshCw size={10} className="animate-spin text-blue-450" />
+                            ) : saveStatus === 'Changes pending' ? (
+                                <AlertCircle size={10} className="text-amber-400" />
+                            ) : saveStatus === 'Error saving' ? (
+                                <AlertCircle size={10} className="text-red-400" />
                             ) : (
                                 <Check size={10} className="text-green-500" />
                             )}
@@ -330,46 +355,8 @@ const DocumentWorkspace = () => {
 
             {/* Split Workspace Layout */}
             <div className="flex-1 flex overflow-hidden">
-                {/* Outline Left Sidebar */}
-                {showOutline && (
-                    <aside className="w-56 border-r border-slate-800 bg-slate-900/40 p-4 space-y-4 overflow-y-auto hidden md:block select-none">
-                        <div className="flex items-center gap-1.5 text-slate-450">
-                            <AlignLeft size={14} />
-                            <span className="text-[9px] font-bold uppercase tracking-wider">Document Outline</span>
-                        </div>
-                        <ul className="text-xs space-y-2">
-                            <li className="flex items-center gap-1 text-slate-350 hover:text-slate-100 cursor-pointer">
-                                <ChevronRight size={12} className="text-slate-650" />
-                                <span className="font-medium line-clamp-1">1. Summary & Intro</span>
-                            </li>
-                            <li className="flex items-center gap-1 text-slate-500 hover:text-slate-300 cursor-pointer pl-2">
-                                <ChevronRight size={12} className="text-slate-700" />
-                                <span className="line-clamp-1">Scope & Parameters</span>
-                            </li>
-                            <li className="flex items-center gap-1 text-slate-350 hover:text-slate-100 cursor-pointer">
-                                <ChevronRight size={12} className="text-slate-650" />
-                                <span className="font-medium line-clamp-1">2. Architecture Blueprint</span>
-                            </li>
-                            <li className="flex items-center gap-1 text-slate-350 hover:text-slate-100 cursor-pointer">
-                                <ChevronRight size={12} className="text-slate-650" />
-                                <span className="font-medium line-clamp-1">3. Action Items</span>
-                            </li>
-                        </ul>
-                    </aside>
-                )}
-
                 {/* Plain Rich Editor Panel */}
                 <main className="flex-1 flex flex-col bg-slate-950 overflow-hidden">
-                    {/* Outline toggle bar */}
-                    <div className="h-10 border-b border-slate-850 px-6 flex items-center bg-slate-950/20 text-slate-450 select-none">
-                        <button 
-                            onClick={() => setShowOutline(!showOutline)}
-                            className={`p-1 hover:bg-slate-800 rounded transition cursor-pointer ${showOutline ? 'text-blue-450 bg-slate-900/60' : ''}`}
-                            title="Toggle Outline Panel"
-                        >
-                            <AlignLeft size={14} />
-                        </button>
-                    </div>
 
                     {/* Quill Rich Text Editor */}
                     {docsLoading ? (

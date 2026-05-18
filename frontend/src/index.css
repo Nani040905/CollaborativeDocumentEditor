@@ -82,6 +82,31 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
 }
 
+/* Toolbar Hover and Active Selected Highlights (Dark Mode) */
+.ql-toolbar.ql-snow button:hover,
+.ql-toolbar.ql-snow button.ql-active {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  border-radius: 4px !important;
+}
+.ql-toolbar.ql-snow button:hover .ql-stroke,
+.ql-toolbar.ql-snow button.ql-active .ql-stroke {
+  stroke: #60a5fa !important;
+}
+.ql-toolbar.ql-snow button:hover .ql-fill,
+.ql-toolbar.ql-snow button.ql-active .ql-fill {
+  fill: #60a5fa !important;
+}
+.ql-toolbar.ql-snow .ql-picker:hover,
+.ql-toolbar.ql-snow .ql-picker.ql-active {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  border-radius: 4px !important;
+  color: #60a5fa !important;
+}
+.ql-toolbar.ql-snow .ql-picker:hover .ql-stroke,
+.ql-toolbar.ql-snow .ql-picker.ql-active .ql-stroke {
+  stroke: #60a5fa !important;
+}
+
 .ql-container.ql-snow {
   border: none !important;
   font-family: 'Inter', sans-serif !important;
@@ -149,13 +174,9 @@ body.light-mode header input::placeholder {
   color: #94a3b8 !important;
 }
 
-/* Main Panels & Outline */
+/* Main Panels */
 body.light-mode main {
   background-color: #f8fafc !important;
-}
-body.light-mode aside.hidden.md\:block {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
 }
 
 /* Document Cards */
@@ -213,6 +234,31 @@ body.light-mode .ql-toolbar.ql-snow .ql-picker-options {
   border: 1px solid #e2e8f0 !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
 }
+
+/* Toolbar Hover and Active Selected Highlights (Light Mode) */
+body.light-mode .ql-toolbar.ql-snow button:hover,
+body.light-mode .ql-toolbar.ql-snow button.ql-active {
+  background-color: rgba(37, 99, 235, 0.12) !important;
+  border-radius: 4px !important;
+}
+body.light-mode .ql-toolbar.ql-snow button:hover .ql-stroke,
+body.light-mode .ql-toolbar.ql-snow button.ql-active .ql-stroke {
+  stroke: #2563eb !important;
+}
+body.light-mode .ql-toolbar.ql-snow button:hover .ql-fill,
+body.light-mode .ql-toolbar.ql-snow button.ql-active .ql-fill {
+  fill: #2563eb !important;
+}
+body.light-mode .ql-toolbar.ql-snow .ql-picker:hover,
+body.light-mode .ql-toolbar.ql-snow .ql-picker.ql-active {
+  background-color: rgba(37, 99, 235, 0.12) !important;
+  border-radius: 4px !important;
+  color: #2563eb !important;
+}
+body.light-mode .ql-toolbar.ql-snow .ql-picker:hover .ql-stroke,
+body.light-mode .ql-toolbar.ql-snow .ql-picker.ql-active .ql-stroke {
+  stroke: #2563eb !important;
+}
 body.light-mode .ql-container.ql-snow {
   background-color: #ffffff !important;
   color: #1e293b !important;
@@ -234,6 +280,102 @@ body.light-mode .fixed.inset-0 input, body.light-mode .fixed.inset-0 select {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
   color: #0f172a !important;
+}
+
+/* Document Editor Workspace & Header Light Mode Overrides */
+body.light-mode .workspace-outer-wrapper {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+body.light-mode .workspace-outer-wrapper header button {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+body.light-mode .workspace-outer-wrapper header button:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+body.light-mode .editor-container-wrapper {
+  background-color: #f8fafc !important;
+}
+body.light-mode .quill-wrapper {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 24px -2px rgba(15, 23, 42, 0.04) !important;
+}
+body.light-mode .quill-wrapper .ql-toolbar.ql-snow {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+body.light-mode .save-status-badge {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+}
+body.light-mode .save-status-badge.bg-amber-500\/10 {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+  color: #b45309 !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+body.light-mode .save-status-badge.bg-red-500\/10 {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+  color: #b91c1c !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Premium Code Block Syntax Highlights & Layout Overrides */
+.ql-editor pre.ql-syntax {
+  background-color: #1e1e2e !important; /* Catppuccin mocha elegant base dark */
+  color: #cdd6f4 !important;
+  border-radius: 12px !important;
+  padding: 16px 20px !important;
+  font-family: 'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace !important;
+  font-size: 13.5px !important;
+  line-height: 1.6 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+  margin: 16px 0 !important;
+}
+
+/* Light mode adjustments for code block borders */
+body.light-mode .ql-editor pre.ql-syntax {
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Premium Styling for Quill Code-Block Language Dropdown Selectors */
+.ql-editor pre.ql-syntax select.ql-ui {
+  background-color: #111827 !important; /* Premium rich gray-dark background */
+  color: #e2e8f0 !important; /* Sleek slate-light text */
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 6px !important;
+  padding: 4px 24px 4px 10px !important;
+  outline: none !important;
+  font-family: inherit !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  appearance: none !important; /* Reset default arrows */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  background-size: 12px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.2s ease !important;
+}
+
+.ql-editor pre.ql-syntax select.ql-ui:hover {
+  background-color: #1f2937 !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+
+/* Styling for Option items inside the dropdown to guarantee high-contrast dark theme compatibility */
+.ql-editor pre.ql-syntax select.ql-ui option {
+  background-color: #ffffff !important; /* Force high-contrast white background */
+  color: #0f172a !important; /* Rich dark slate text for perfect visibility */
+  font-size: 12px !important;
+  padding: 6px !important;
 }
 
 

@@ -1,6 +1,11 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/atom-one-dark.css';
+
+// Bind highlight.js globally for Quill's syntax system to coordinate rendering
+window.hljs = hljs;
 
 // Premium styling layout overrides for Quill standard styles
 const TOOLBAR_OPTIONS = [
@@ -44,10 +49,45 @@ const Editor = ({ value, onChange, onInit }) => {
         const q = new Quill(editorContainer, {
             theme: 'snow',
             modules: {
+                syntax: {
+                    hljs: hljs
+                },
                 toolbar: TOOLBAR_OPTIONS
             },
-            placeholder: 'Start writing your shared thoughts here...'
+            placeholder: '    Start writing your shared thoughts here...'
         });
+
+        // Add native title tooltips to all Quill toolbar items for descriptive hover text names
+        const toolbar = wrapper.querySelector('.ql-toolbar');
+        if (toolbar) {
+            const addTitle = (selector, titleText) => {
+                const elements = toolbar.querySelectorAll(selector);
+                elements.forEach(el => {
+                    el.setAttribute('title', titleText);
+                });
+            };
+
+            // Individual button controls
+            addTitle('.ql-bold', 'Bold');
+            addTitle('.ql-italic', 'Italic');
+            addTitle('.ql-underline', 'Underline');
+            addTitle('.ql-strike', 'Strikethrough');
+            addTitle('.ql-script[value="sub"]', 'Subscript');
+            addTitle('.ql-script[value="super"]', 'Superscript');
+            addTitle('.ql-list[value="ordered"]', 'Ordered List');
+            addTitle('.ql-list[value="bullet"]', 'Bullet List');
+            addTitle('.ql-image', 'Insert Image');
+            addTitle('.ql-code-block', 'Code Block');
+            addTitle('.ql-blockquote', 'Blockquote');
+            addTitle('.ql-clean', 'Clear Formatting');
+
+            // Dropdown select pickers
+            addTitle('.ql-font', 'Font Family');
+            addTitle('.ql-header', 'Heading Style');
+            addTitle('.ql-color', 'Text Color');
+            addTitle('.ql-background', 'Background Color');
+            addTitle('.ql-align', 'Text Alignment');
+        }
 
         // Store reference globally
         quillInstanceRef.current = q;
@@ -88,7 +128,7 @@ const Editor = ({ value, onChange, onInit }) => {
     }, [value]);
 
     return (
-        <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-950 px-4 md:px-8 py-4">
+        <div className="editor-container-wrapper flex-1 flex flex-col h-full overflow-hidden bg-slate-950 px-4 md:px-8 py-4">
             <div 
                 className="quill-wrapper flex-1 border border-slate-800 bg-slate-900/20 backdrop-blur-md rounded-2xl flex flex-col overflow-hidden max-w-5xl w-full mx-auto"
                 ref={wrapperRef}
