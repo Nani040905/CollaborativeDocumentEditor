@@ -15,7 +15,13 @@ const TOOLBAR_OPTIONS = [
     ['clean']
 ];
 
+/**
+ * Custom Rich Text Editor Component utilizing Quill.js.
+ * Implements callback-ref DOM attachment to bypass React Strict Mode multi-mount issues,
+ * tracks local input keystrokes, and pipes change notifications to parent components.
+ */
 const Editor = ({ value, onChange, onInit }) => {
+    // Tracks active Quill editor instance across renders
     const quillInstanceRef = useRef(null);
 
     // Using a callback ref is the safest way to target DOM mounting in React
@@ -27,7 +33,7 @@ const Editor = ({ value, onChange, onInit }) => {
         const editorContainer = document.createElement('div');
         wrapper.append(editorContainer);
 
-        // Bootstrap Quill
+        // Bootstrap Quill with snow theme and custom toolbar
         const q = new Quill(editorContainer, {
             theme: 'snow',
             modules: {

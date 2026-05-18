@@ -9,10 +9,18 @@ import ErrorPage from './components/Common/ErrorPage';
 import useAuthStore from './store/store-placeholder';
 import useThemeStore from './store/useThemeStore';
 
+/**
+ * Root Application Router & Bootstrapper Component.
+ * Maps out public authentication forms, secures collaborative dashboard and editing workspaces
+ * using the `<ProtectedRoute>` gating wrapper, maps HTTP error codes to customized pages,
+ * and boots active user sessions and visual theme settings upon initial mount.
+ */
 function App() {
+    // Extract state-bootstrap methods from Zustand stores
     const checkAuth = useAuthStore((state) => state.checkAuth);
     const initTheme = useThemeStore((state) => state.initTheme);
 
+    // Bootstraps active session authentication status and visual theme on mount
     useEffect(() => {
         checkAuth();
         initTheme();
@@ -21,14 +29,14 @@ function App() {
     return (
         <Router>
             <Routes>
-                {/* Home redirection */}
+                {/* Home redirection - Redirects root visitors straight to the dashboard */}
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 
                 {/* Authentication Routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 
-                {/* Secured Private Routes */}
+                {/* Secured Private Routes (Protected by session verification gates) */}
                 <Route 
                     path="/dashboard" 
                     element={

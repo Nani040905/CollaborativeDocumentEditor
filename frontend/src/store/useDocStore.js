@@ -3,12 +3,20 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+/**
+ * Zustand global document workspace store.
+ * Coordinates all MERN database queries, handles CRUD requests for collaborative items,
+ * processes offline memory filters, and binds live title/content updates.
+ */
 const useDocStore = create((set, get) => ({
-    documents: [],
-    currentDocument: null,
-    loading: false,
-    error: null,
+    documents: [],            // User document records visible in active dashboard listings
+    currentDocument: null,    // The active document loaded inside editor workspaces
+    loading: false,           // Document loading state indicator
+    error: null,              // Document API feedback errors
 
+    /**
+     * Retrieves all documents owned or shared with the active user.
+     */
     fetchDocuments: async () => {
         set({ loading: true, error: null });
         try {
@@ -19,6 +27,11 @@ const useDocStore = create((set, get) => ({
         }
     },
 
+    /**
+     * Fetches detailed fields of a specific document by its ID.
+     * @param {string} id - Document Object ID.
+     * @returns {Promise<object>} Stored document profile.
+     */
     fetchDocumentById: async (id) => {
         set({ loading: true, error: null });
         try {
@@ -32,6 +45,12 @@ const useDocStore = create((set, get) => ({
         }
     },
 
+    /**
+     * Spawns a new blank document sheet in the database.
+     * @param {string} title - Default document title.
+     * @param {string} content - Initial document content.
+     * @returns {Promise<object>} Created document instance.
+     */
     createDocument: async (title = 'Untitled Document', content = '') => {
         set({ loading: true, error: null });
         try {
@@ -48,6 +67,11 @@ const useDocStore = create((set, get) => ({
         }
     },
 
+    /**
+     * Permantently deletes a document from user space (restricted to Owners).
+     * @param {string} id - Document Object ID.
+     * @returns {Promise<{success: boolean, error?: string}>} Delete results.
+     */
     deleteDocument: async (id) => {
         set({ error: null });
         try {
@@ -64,6 +88,11 @@ const useDocStore = create((set, get) => ({
         }
     },
 
+    /**
+     * Dispatch inline title updates to backend and sync locally.
+     * @param {string} id - Document Object ID.
+     * @param {string} title - New document title.
+     */
     updateTitleInDashboard: async (id, title) => {
         try {
             await axios.put(`${API_URL}/documents/${id}/title`, { title }, { withCredentials: true });
@@ -77,6 +106,12 @@ const useDocStore = create((set, get) => ({
         }
     },
 
+    /**
+     * Invites a teammate as editor by their email lookup.
+     * @param {string} id - Document Object ID.
+     * @param {string} email - Email query parameter.
+     * @returns {Promise<{success: boolean, message?: string, error?: string}>} Invite results.
+     */
     inviteCollaborator: async (id, email) => {
         set({ error: null });
         try {
@@ -89,6 +124,12 @@ const useDocStore = create((set, get) => ({
         }
     },
 
+    /**
+     * Commits editor rich text changes (manual/autosave deltas) directly back to database content collections.
+     * @param {string} id - Document Object ID.
+     * @param {string|object} content - Quill rich text data.
+     * @returns {Promise<{success: boolean}>} Sync results.
+     */
     updateContent: async (id, content) => {
         try {
             const res = await axios.put(`${API_URL}/documents/${id}/content`, { content }, { withCredentials: true });
@@ -105,6 +146,7 @@ const useDocStore = create((set, get) => ({
         }
     },
 
+    // Purges cached editor workspace states
     clearCurrentDocument: () => set({ currentDocument: null })
 }));
 

@@ -22,21 +22,21 @@ const Dashboard = () => {
     } = useDocStore();
     const { theme, toggleTheme } = useThemeStore();
     
-    // Core navigation state
+    // Core navigation state (toggles between workspace documents, shared sheets, settings, and trash bins)
     const [activeTab, setActiveTab] = useState('documents');
     
-    // Search queries
+    // Search queries (filters active list titles reactively)
     const [searchQuery, setSearchQuery] = useState('');
     
-    // Document collections
+    // Document collections (caches deleted items in temporary client-side mock trash bin)
     const [trashDocuments, setTrashDocuments] = useState([]);
     
-    // Modal & creation states
+    // Modal & creation states (manages document generation modal overlays)
     const [showModal, setShowModal] = useState(false);
     const [newTitle, setNewTitle] = useState('');
     const [newTemplate, setNewTemplate] = useState('blank');
     
-    // Settings feedback states
+    // Settings feedback states (monitors input form profiles, custom autosave toggle triggers)
     const [settingsSaved, setSettingsSaved] = useState(false);
     const [settingsName, setSettingsName] = useState('');
     const [settingsTheme, setSettingsTheme] = useState('deep-obsidian');
@@ -79,11 +79,22 @@ const Dashboard = () => {
     }, [user, fetchDocuments]);
 
     // Helpers to check ownership and format credentials
+    
+    /**
+     * Verifies if the logged-in user is the original author of the document.
+     * @param {object} doc - Document database item.
+     * @returns {boolean} Matches ownership ids.
+     */
     const isDocOwner = (doc) => {
         const ownerId = doc.owner?._id || doc.owner;
         return ownerId && user?.id && ownerId.toString() === user.id.toString();
     };
 
+    /**
+     * Extracts name initials for display bubble widgets.
+     * @param {object} doc - Document database item.
+     * @returns {string} Two uppercase initials.
+     */
     const getOwnerInitials = (doc) => {
         if (doc.owner?.name) {
             return doc.owner.name.substring(0, 2).toUpperCase();
@@ -91,6 +102,11 @@ const Dashboard = () => {
         return 'US';
     };
 
+    /**
+     * Resolves human-readable label for document author.
+     * @param {object} doc - Document database item.
+     * @returns {string} 'Me' or collaborator display name.
+     */
     const getOwnerName = (doc) => {
         if (doc.owner?.name) {
             return isDocOwner(doc) ? 'Me' : doc.owner.name;
@@ -98,6 +114,11 @@ const Dashboard = () => {
         return 'Unknown';
     };
 
+    /**
+     * Formats timestamp into real-time relative indicators.
+     * @param {string} dateString - Parsed date.
+     * @returns {string} Human-friendly offset.
+     */
     const formatTimestamp = (dateString) => {
         if (!dateString) return 'Just now';
         const date = new Date(dateString);
@@ -116,6 +137,11 @@ const Dashboard = () => {
         return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     };
 
+    /**
+     * Truncates content deltas to form dashboard snippet previews.
+     * @param {string|object} content - Editor raw content.
+     * @returns {string} Truncated string block.
+     */
     const formatSnippet = (content) => {
         if (!content) return 'Empty document. Start collaborating...';
         if (typeof content === 'object') {
@@ -128,6 +154,10 @@ const Dashboard = () => {
     };
 
     // Handlers
+    
+    /**
+     * Submits document title and template to create a new sheet in MongoDB.
+     */
     const handleCreateDocument = async (e) => {
         e.preventDefault();
         if (!newTitle.trim()) return;
@@ -148,7 +178,9 @@ const Dashboard = () => {
         }
     };
 
-    // Move to Trash handler (Deletes on server, adds to local trash array)
+    /**
+     * Archives a document by deleting it from active database lists and backing up in local Trash.
+     */
     const handleMoveToTrash = async (e, id) => {
         e.stopPropagation();
         const docToTrash = dbDocuments.find(doc => doc._id === id);
@@ -173,7 +205,9 @@ const Dashboard = () => {
         }
     };
 
-    // Restore from Trash handler (Re-creates document on server, removes from trash list)
+    /**
+     * Pulls document data from Mock Trash and spawns it back onto MongoDB.
+     */
     const handleRestoreFromTrash = async (e, id) => {
         e.stopPropagation();
         const docToRestore = trashDocuments.find(doc => doc.id === id);
@@ -189,7 +223,9 @@ const Dashboard = () => {
         }
     };
 
-    // Permanent delete handler
+    /**
+     * Purges document record completely from mock trash logs.
+     */
     const handlePermanentDelete = (e, id) => {
         e.stopPropagation();
         const updatedTrash = trashDocuments.filter(doc => doc.id !== id);
@@ -197,12 +233,17 @@ const Dashboard = () => {
         localStorage.setItem('mock_trash', JSON.stringify(updatedTrash));
     };
 
-    // Empty Trash handler
+    /**
+     * Empties the entire client-side mock trash bin.
+     */
     const handleEmptyTrash = () => {
         setTrashDocuments([]);
         localStorage.setItem('mock_trash', JSON.stringify([]));
     };
 
+    /**
+     * Saves display profile name changes back to MERN endpoints, and saves custom preferences.
+     */
     const handleSaveSettings = async (e) => {
         e.preventDefault();
         setSettingsSaved(false);
@@ -225,6 +266,9 @@ const Dashboard = () => {
         }
     };
 
+    /**
+     * Flushes JWT token cookies and forwards user back to login route.
+     */
     const handleLogout = async () => {
         await logout();
         navigate('/login');

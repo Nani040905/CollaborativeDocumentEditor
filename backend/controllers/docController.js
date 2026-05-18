@@ -1,16 +1,20 @@
 import Document from '../models/Document.js';
 import User from '../models/User.js';
 
-// Create a new document
+/**
+ * Creates a new document.
+ * Saves the document with default titles and sets the creator user as the Owner.
+ */
 export const createDocument = async (req, res) => {
     const { title, content } = req.body;
     
     try {
+        // Build and save a document record in MongoDB
         const newDoc = await Document.create({
             title: title || 'Untitled Document',
             content: content || '',
-            owner: req.user._id,
-            collaborators: []
+            owner: req.user._id, // Assign active creator user ID
+            collaborators: [] // Starts empty of collaborators
         });
 
         res.status(201).json(newDoc);
@@ -19,17 +23,22 @@ export const createDocument = async (req, res) => {
     }
 };
 
-// Retrieve all documents owned by user OR where they are a collaborator
+/**
+ * Retrieves all documents owned by user OR where they are invited as a collaborator.
+ * Employs Mongoose `.populate()` to inject owner profile objects (name, email)
+ * and sorts them newest first.
+ */
 export const getDocuments = async (req, res) => {
     try {
+        // Query MongoDB with OR logic targeting owner OR collaborator arrays matching user ID
         const documents = await Document.find({
             $or: [
                 { owner: req.user._id },
                 { collaborators: req.user._id }
             ]
         })
-        .populate('owner', 'name email') // Inject owner profiles
-        .sort({ updatedAt: -1 }); // Sorted newest first
+        .populate('owner', 'name email') // Inject owner details automatically
+        .sort({ updatedAt: -1 }); // Sorted descending (newest edits first)
 
         res.status(200).json(documents);
     } catch (error) {
@@ -37,20 +46,26 @@ export const getDocuments = async (req, res) => {
     }
 };
 
-// Fetch a single document with detailed population
+/**
+ * Fetches a single document by its Object ID with detailed population.
+ * Restricts access via an authorization firewall checking if the requesting user
+ * is either the document owner or an invited collaborator.
+ */
 export const getDocumentById = async (req, res) => {
     const { id } = req.params;
 
     try {
+        // Fetch target document by its MongoDB Object ID
         const doc = await Document.findById(id)
             .populate('owner', 'name email')
             .populate('collaborators', 'name email');
 
+        // Fail if the document does not exist
         if (!doc) {
             return res.status(404).json({ message: 'Document not found.' });
         }
 
-        // Authorization firewall check
+        // Authorization firewall check: Assert user owns or is on the collaborators list
         const isOwner = doc.owner._id.toString() === req.user._id.toString();
         const isCollaborator = doc.collaborators.some(
             (c) => c._id.toString() === req.user._id.toString()
@@ -66,7 +81,10 @@ export const getDocumentById = async (req, res) => {
     }
 };
 
-// Update a document's title (Owner or Collaborator)
+/**
+ * Updates a document's title.
+ * Restricts renaming permissions to either the Document Owner or active Collaborators.
+ */
 export const updateDocumentTitle = async (req, res) => {
     const { id } = req.params;
     const { title } = req.body;
@@ -78,6 +96,7 @@ export const updateDocumentTitle = async (req, res) => {
             return res.status(404).json({ message: 'Document not found.' });
         }
 
+        // Assert permissions
         const isOwner = doc.owner.toString() === req.user._id.toString();
         const isCollaborator = doc.collaborators.some(
             (c) => c.toString() === req.user._id.toString()
@@ -87,6 +106,7 @@ export const updateDocumentTitle = async (req, res) => {
             return res.status(403).json({ message: 'Access denied. Unauthorized to modify this document.' });
         }
 
+        // Apply clean strings and fallback to Untitled Document if empty
         doc.title = title || 'Untitled Document';
         await doc.save();
 
@@ -96,7 +116,10 @@ export const updateDocumentTitle = async (req, res) => {
     }
 };
 
-// Delete a document (Strictly restricted to Owner)
+/**
+ * Deletes a document.
+ * Strictly restricted to the Document Owner (collaborators cannot delete documents).
+ */
 export const deleteDocument = async (req, res) => {
     const { id } = req.params;
 
@@ -107,10 +130,12 @@ export const deleteDocument = async (req, res) => {
             return res.status(404).json({ message: 'Document not found.' });
         }
 
+        // Strictly restrict deletes to the primary owner of the document
         if (doc.owner.toString() !== req.user._id.toString()) {
             return res.status(403).json({ message: 'Access denied. Only the owner can delete this document.' });
         }
 
+        // Commits permanent deletion from MongoDB collection
         await doc.deleteOne();
         res.status(200).json({ message: 'Document deleted successfully.' });
     } catch (error) {
@@ -118,7 +143,11 @@ export const deleteDocument = async (req, res) => {
     }
 };
 
-// Add a collaborator by Email lookup
+/**
+ * Invites a collaborator by email address.
+ * Looks up target profile inside Users database, and appends reference to the Document collaborators array.
+ * Restricts invitations strictly to the primary Document Owner.
+ */
 export const addCollaborator = async (req, res) => {
     const { id } = req.params;
     const { email } = req.body;
@@ -135,19 +164,23 @@ export const addCollaborator = async (req, res) => {
             return res.status(403).json({ message: 'Only the document owner can invite collaborators.' });
         }
 
+        // Perform clean lookup case-insensitively
         const userToInvite = await User.findOne({ email: email.toLowerCase() });
         if (!userToInvite) {
             return res.status(404).json({ message: 'No registered user found with that email address.' });
         }
 
+        // Check if the user is attempting to invite themselves
         if (userToInvite._id.toString() === req.user._id.toString()) {
             return res.status(400).json({ message: 'You are already the owner of this document.' });
         }
 
+        // Check if the user is already on the collaborators list
         if (doc.collaborators.includes(userToInvite._id)) {
             return res.status(400).json({ message: 'This user is already a collaborator on this document.' });
         }
 
+        // Append the user ID reference to the collaborative list and save
         doc.collaborators.push(userToInvite._id);
         await doc.save();
 
@@ -157,7 +190,10 @@ export const addCollaborator = async (req, res) => {
     }
 };
 
-// Save a document's rich-text content (Owner or Collaborator)
+/**
+ * Saves a document's rich-text content (Quill editor changes).
+ * Restricts updates to either the Document Owner or active Collaborators.
+ */
 export const updateDocumentContent = async (req, res) => {
     const { id } = req.params;
     const { content } = req.body;
@@ -169,6 +205,7 @@ export const updateDocumentContent = async (req, res) => {
             return res.status(404).json({ message: 'Document not found.' });
         }
 
+        // Perform permission checks
         const isOwner = doc.owner.toString() === req.user._id.toString();
         const isCollaborator = doc.collaborators.some(
             (c) => c.toString() === req.user._id.toString()
@@ -178,6 +215,7 @@ export const updateDocumentContent = async (req, res) => {
             return res.status(403).json({ message: 'Access denied. Unauthorized to modify this document.' });
         }
 
+        // Apply new content deltas and save
         doc.content = content || '';
         await doc.save();
 

@@ -3,31 +3,48 @@ import { useNavigate, Link } from 'react-router';
 import useAuthStore from '../../store/useAuthStore';
 import { Mail, Lock, LogIn } from 'lucide-react';
 
+/**
+ * Login Authentication Form Component.
+ * Captures user credentials, verifies non-empty states, dispatches auth store login actions,
+ * handles API responses and dynamic redirection to secured dashboard workspace.
+ */
 const Login = () => {
     const navigate = useNavigate();
+    
+    // Extract authentication states and actions from the Zustand global store
     const { login, error: authError, clearErrors } = useAuthStore();
+    
+    // Local input and loading state parameters
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    /**
+     * Submit handler for user credentials authentication.
+     * Restricts empty values and submits request to API servers.
+     */
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
-        clearErrors();
+        clearErrors(); // Flush previous authentication stores errors prior to new submit
 
+        // Assert form validity
         if (!email.trim() || !password.trim()) {
             setError('Please enter both email and password.');
             return;
         }
 
         setLoading(true);
+        // Dispatch credential logins
         const res = await login(email, password);
         setLoading(false);
 
+        // Redirect user to workspace dashboard on successful login
         if (res.success) {
             navigate('/dashboard');
         } else {
+            // Render specific response errors
             setError(res.error || 'Invalid credentials');
         }
     };
@@ -40,6 +57,7 @@ const Login = () => {
                     <p className="mt-2 text-xs text-slate-400">Sign in to your collaborative editor workspace</p>
                 </div>
 
+                {/* Render error warnings dynamically */}
                 {(error || authError) && (
                     <div className="mb-4 rounded border border-red-900 bg-red-950/40 p-3 text-xs text-red-400">
                         {error || authError}
@@ -83,6 +101,7 @@ const Login = () => {
                         </div>
                     </div>
 
+                    {/* Disable button to prevent duplicate requests while API call resolves */}
                     <button
                         type="submit"
                         disabled={loading}

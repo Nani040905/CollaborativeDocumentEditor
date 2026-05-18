@@ -12,15 +12,16 @@ import {
 
 const router = express.Router();
 
-// Secure all CRUD endpoints behind auth validation
+// Secure all CRUD endpoints behind auth validation (gateways verify token prior to routing)
 router.use(protect);
 
-router.post('/', createDocument);
-router.get('/', getDocuments);
-router.get('/:id', getDocumentById);
-router.put('/:id/title', updateDocumentTitle);
-router.put('/:id/content', updateDocumentContent);
-router.delete('/:id', deleteDocument);
-router.post('/:id/collaborators', addCollaborator);
+// MERN Collaborative Document Endpoints:
+router.post('/', createDocument);               // Create a new blank or custom document
+router.get('/', getDocuments);                 // Fetch all documents owned or shared with active user
+router.get('/:id', getDocumentById);           // Retrieve detailed fields of a specific document
+router.put('/:id/title', updateDocumentTitle);   // Rename a specific document
+router.put('/:id/content', updateDocumentContent); // Save rich-text delta contents
+router.delete('/:id', deleteDocument);           // Delete a document (Restricted to Owner)
+router.post('/:id/collaborators', addCollaborator); // Invite a collaborator by email lookup
 
 export default router;

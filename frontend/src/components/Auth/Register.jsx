@@ -4,29 +4,46 @@ import { useForm } from 'react-hook-form';
 import useAuthStore from '../../store/useAuthStore';
 import { User, Mail, Lock, UserPlus } from 'lucide-react';
 
+/**
+ * Register Account Creation Component.
+ * Integrates `react-hook-form` to parse form values, enforces frontend password and email format
+ * validations, dispatches credentials to MERN auth endpoints, and handles redirect.
+ */
 const Register = () => {
     const navigate = useNavigate();
+    
+    // Extract account creator dispatch from Zustand authentication store
     const { register: registerUserStore, error: authError, clearErrors } = useAuthStore();
+    
+    // UI tracking parameters
     const [loading, setLoading] = useState(false);
     const [formError, setFormError] = useState(null);
 
+    // Mount React Hook Form parameters
     const {
         register,
         handleSubmit,
         formState: { errors },
     } = useForm();
 
+    /**
+     * Submit callback triggered upon successful validation checks.
+     * @param {object} data - Validated form field inputs.
+     */
     const onSubmit = async (data) => {
         setFormError(null);
-        clearErrors();
+        clearErrors(); // Flush previous authentication stores errors
         setLoading(true);
 
+        // Dispatch registration credentials to Express auth server
         const res = await registerUserStore(data.name, data.email, data.password);
         setLoading(false);
 
         if (res.success) {
+            // Redirect to dashboard on success
             navigate('/dashboard');
         } else {
+            // Handle error callbacks
             setFormError(res.error || 'Registration failed. Please try again.');
         }
     };
@@ -39,6 +56,7 @@ const Register = () => {
                     <p className="mt-2 text-xs text-slate-400">Join the minimalist real-time collaboration canvas</p>
                 </div>
 
+                {/* Render error notifications */}
                 {(formError || authError) && (
                     <div className="mb-4 rounded border border-red-900 bg-red-950/40 p-3 text-xs text-red-400">
                         {formError || authError}
@@ -59,7 +77,7 @@ const Register = () => {
                                 placeholder="John Doe"
                                 className={`w-full rounded border bg-slate-950/80 py-2 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-600 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
                                     errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-800'
-                                }`}
+                                    }`}
                                 {...register('name', { required: 'Name is required' })}
                             />
                         </div>
@@ -81,7 +99,7 @@ const Register = () => {
                                 placeholder="email@example.com"
                                 className={`w-full rounded border bg-slate-950/80 py-2 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-600 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
                                     errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-800'
-                                }`}
+                                    }`}
                                 {...register('email', {
                                     required: 'Email is required',
                                     pattern: {
@@ -109,7 +127,7 @@ const Register = () => {
                                 placeholder="••••••••"
                                 className={`w-full rounded border bg-slate-950/80 py-2 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-600 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
                                     errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-800'
-                                }`}
+                                    }`}
                                 {...register('password', {
                                     required: 'Password is required',
                                     minLength: {
@@ -124,6 +142,7 @@ const Register = () => {
                         )}
                     </div>
 
+                    {/* Disable interactions during registration dispatches */}
                     <button
                         type="submit"
                         disabled={loading}

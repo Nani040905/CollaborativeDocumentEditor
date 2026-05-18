@@ -10,6 +10,11 @@ import {
 } from 'lucide-react';
 import useThemeStore from '../../store/useThemeStore';
 
+/**
+ * Collaborative Document Editor Workspace.
+ * Links together the Quill canvas, visual theme selector store, inline title editors,
+ * debounced auto-save triggers, collaborator invitation popups, and real-time active user bubble listings.
+ */
 const DocumentWorkspace = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -24,6 +29,7 @@ const DocumentWorkspace = () => {
     } = useDocStore();
     const { theme, toggleTheme } = useThemeStore();
 
+    // Editor component state parameters
     const [title, setTitle] = useState('');
     const [saveStatus, setSaveStatus] = useState('All changes saved');
     const [showShare, setShowShare] = useState(false);
