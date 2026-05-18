@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import docRoutes from './routes/docRoutes.js';
+import socketHandler from './sockets/socketHandler.js';
 
 // Load environmental variables
 dotenv.config();
@@ -56,14 +57,8 @@ const io = new Server(server, {
     }
 });
 
-// Temporary Socket Listener (We will modularize this in Part 8)
-io.on('connection', (socket) => {
-    console.log(`[Socket] A client connected. Socket ID: ${socket.id}`);
-
-    socket.on('disconnect', () => {
-        console.log(`[Socket] Client disconnected. Socket ID: ${socket.id}`);
-    });
-});
+// Bind modular socket handlers
+socketHandler(io);
 
 // Run HTTP listener
 const PORT = process.env.PORT || 5000;
