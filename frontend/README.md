@@ -47,18 +47,15 @@ The frontend employs a React Router firewall to manage authenticated states:
 #### Client-Side Routing Flowchart
 ```mermaid
 flowchart TD
-    Start((User Visits URL))
-    AuthCheck{useAuthStore\nIs Authenticated?}
-    
-    Start --> AuthCheck
-    
-    AuthCheck -- "Yes" --> IsPublic{Is Route Public?\n(/login, /register)}
-    IsPublic -- "Yes" --> RedirectDash[Redirect to /dashboard]
-    IsPublic -- "No" --> Allow[Render Protected Component]
-    
-    AuthCheck -- "No" --> IsProtected{Is Route Protected?}
-    IsProtected -- "Yes" --> RedirectLogin[Redirect to /login]
-    IsProtected -- "No" --> AllowPublic[Render Public Component]
+    Start([User Visits URL]) --> AuthCheck{"Authenticated?"}
+
+    AuthCheck -- Yes --> PublicRoute{"Public Route?<br/>(login/register)"}
+    PublicRoute -- Yes --> Dashboard["Redirect → Dashboard"]
+    PublicRoute -- No --> Protected["Render Protected Page"]
+
+    AuthCheck -- No --> ProtectedRoute{"Protected Route?"}
+    ProtectedRoute -- Yes --> Login["Redirect → Login"]
+    ProtectedRoute -- No --> Public["Render Public Page"]
 ```
 
 ---
