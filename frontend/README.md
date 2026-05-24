@@ -42,7 +42,7 @@ The application utilizes **TailwindCSS** for its primary design system.
 ### Security Matrices (Route Protection)
 The frontend employs a React Router firewall to manage authenticated states:
 - **Public Routes:** `/login`, `/register`. Automatically redirects to `/dashboard` if a valid session exists.
-- **Protected Routes:** `/dashboard`, `/document/:id`. Wrapped in an `<AuthRoute>` component that verifies the global `useAuthStore` session. Unauthenticated users are kicked to `/login`.
+- **Protected Routes:** `/dashboard/:tab`, `/document/:id`. Wrapped in an `<AuthRoute>` component that verifies the global `useAuthStore` session. Unauthenticated users are kicked to `/login`.
 
 #### Client-Side Routing Flowchart
 ```mermaid
@@ -65,7 +65,7 @@ flowchart TD
 ### Component Architecture
 The application UI is broken down into isolated, modular sub-components:
 - **Editor Workspace:** Separated into `DocumentWorkspace` (layout), `WorkspaceHeader` (nav/titles), `WorkspacePresence` (avatars), `RemoteCursorsOverlay` (live typing telemetry), and `Editor` (Quill instance).
-- **Dashboard:** Grid-based cards with context actions (rename, delete, share).
+- **Dashboard:** Features persistent URL-parameterized tabs (`/dashboard/documents`, `/dashboard/shared`, `/dashboard/settings`, `/dashboard/trash`) allowing users to reload without losing their active view, rendering grid-based cards with context actions (rename, delete, share).
 
 ### Forms & Validation
 Authentication forms (Login/Register) are powered by **React Hook Form**:
