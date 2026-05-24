@@ -1,6 +1,10 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
+/**
+ * Create Document Modal Component.
+ * An overlay modal for creating new collaborative documents from templates.
+ */
 const CreateDocModal = ({
     showModal,
     setShowModal,

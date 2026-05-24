@@ -1,6 +1,10 @@
 import React from 'react';
 import { Users, Monitor, Shield, Save, CheckCircle } from 'lucide-react';
 
+/**
+ * Settings Panel Component.
+ * Provides forms and toggles for updating user profile, theme, and editor preferences.
+ */
 const SettingsPanel = ({
     settingsName,
     setSettingsName,

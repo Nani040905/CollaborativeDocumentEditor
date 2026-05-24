@@ -10,46 +10,76 @@ import authRoutes from './routes/authRoutes.js';
 import docRoutes from './routes/docRoutes.js';
 import socketHandler from './sockets/socketHandler.js';
 
-// Load environmental variables
+// Load environmental variables from .env file into process.env
 dotenv.config();
 
-// Establish MongoDB Connection
+// Establish MongoDB Connection using the configuration module
 connectDB();
 
+/**
+ * Initialize Express application instance.
+ * Serves as the core HTTP request handler and middleware router.
+ */
 const app = express();
+
+/**
+ * Create HTTP server instance binding the Express app.
+ * Required for integrating Socket.IO since it needs a raw HTTP server to attach to.
+ */
 const server = http.createServer(app);
 
-// Configure Cross-Origin Resource Sharing (CORS)
+/**
+ * Configure Cross-Origin Resource Sharing (CORS) options.
+ * Restricts which domains can interact with this API.
+ * 
+ * @type {cors.CorsOptions}
+ */
 const corsOptions = {
+    // Dynamically set origin based on environment or default to local Vite dev server
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    credentials: true, // Allow cookies to be sent with REST requests
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    credentials: true, // Essential: Allows cookies/session tokens to be sent with REST requests
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow standard CRUD methods
+    allowedHeaders: ['Content-Type', 'Authorization'] // Whitelist headers for JSON payloads and auth tokens
 };
 
+// Apply CORS middleware globally to all routes
 app.use(cors(corsOptions));
+
+// Built-in middleware to parse incoming JSON payloads in request bodies
 app.use(express.json());
+
+// Middleware to parse Cookie header and populate req.cookies with an object keyed by the cookie names
 app.use(cookieParser());
 
-// Limit authentication endpoints specifically to prevent brute force
+/**
+ * Rate Limiter Configuration for Authentication endpoints.
+ * Limits the number of requests to prevent brute force and DDoS attacks.
+ */
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes window
-    max: 100, // Limit each IP address to 100 requests per window
+    windowMs: 15 * 60 * 1000, // Timeframe: 15 minutes window
+    max: 100, // Maximum threshold: Limit each IP address to 100 requests per window
     message: {
         message: 'Too many requests originating from this IP. Please try again after 15 minutes.'
     },
-    standardHeaders: true, // Return rate limit info in standard headers
-    legacyHeaders: false // Disable old legacy headers
+    standardHeaders: true, // Return rate limit info in standard `RateLimit-*` headers
+    legacyHeaders: false // Disable old legacy `X-RateLimit-*` headers
 });
 
+// Apply rate limiting exclusively to login and registration endpoints
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
-// Mount API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/documents', docRoutes);
+// Mount Modular API routers for specific domain logic
+app.use('/api/auth', authRoutes); // Handles registration, login, logout, validation
+app.use('/api/documents', docRoutes); // Handles document CRUD and sharing
 
-// REST Health Check Endpoint
+/**
+ * REST Health Check Endpoint.
+ * Useful for Docker/Kubernetes/Render to check if the Node service is responsive.
+ * 
+ * @route GET /health
+ * @returns {Object} 200 - Server status, timestamp, and uptime in seconds.
+ */
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'online',
@@ -58,24 +88,30 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Configure Socket.IO Server
+/**
+ * Configure Socket.IO Real-time Server.
+ * Attached to the raw HTTP server instance.
+ */
 const io = new Server(server, {
     cors: {
         origin: process.env.CLIENT_URL || 'http://localhost:5173',
         methods: ['GET', 'POST'],
-        credentials: true
+        credentials: true // Crucial for authenticating WebSocket connections via HTTP-only cookies
     },
-    pingTimeout: 60000, // Timeout for client heartbeats
+    pingTimeout: 60000, // Timeout duration for client heartbeats (60 seconds)
     connectionStateRecovery: {
-        // Automatically recover state on connection drops
-        maxDisconnectionDuration: 2 * 60 * 1000 // 2 minutes
+        // Automatically recover state (e.g., missed events) on brief connection drops
+        maxDisconnectionDuration: 2 * 60 * 1000 // Buffer duration: 2 minutes
     }
 });
 
-// Bind modular socket handlers
+// Bind modular socket handlers passing the global `io` instance to manage document collaboration
 socketHandler(io);
 
-// Run HTTP listener
+/**
+ * Start HTTP listener.
+ * Binds the server to the specified PORT and begins accepting connections.
+ */
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
     console.log(`[Server] Editor backend service running in ${process.env.NODE_ENV} mode on port ${PORT}`);

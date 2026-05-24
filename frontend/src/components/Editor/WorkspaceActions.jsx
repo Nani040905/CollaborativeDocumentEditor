@@ -1,6 +1,10 @@
 import React from 'react';
 import { Moon, Sun, Save, Share2, Check, Copy } from 'lucide-react';
 
+/**
+ * Workspace Actions Component.
+ * Contains action buttons for saving, sharing, and toggling themes within the editor.
+ */
 const WorkspaceActions = ({
     id,
     autosaveEnabled,

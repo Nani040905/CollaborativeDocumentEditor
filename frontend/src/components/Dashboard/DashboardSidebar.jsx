@@ -3,6 +3,10 @@ import {
     FolderOpen, Users, Settings, Trash2, LogOut 
 } from 'lucide-react';
 
+/**
+ * Dashboard Sidebar Component.
+ * Manages the main navigation tabs between documents, shared sheets, settings, and trash.
+ */
 const DashboardSidebar = ({ activeTab, setActiveTab, user, handleLogout }) => {
     return (
         <aside className="w-64 border-r border-slate-800 bg-slate-900 flex flex-col justify-between select-none">

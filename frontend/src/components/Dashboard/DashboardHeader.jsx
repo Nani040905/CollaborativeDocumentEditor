@@ -1,6 +1,10 @@
 import React from 'react';
 import { Search, Moon, Sun, Plus, Trash2 } from 'lucide-react';
 
+/**
+ * Dashboard Header Component.
+ * Provides the global search bar, visual theme toggles, and document creation actions.
+ */
 const DashboardHeader = ({ 
     activeTab, 
     searchQuery, 

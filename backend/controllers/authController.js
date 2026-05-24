@@ -24,6 +24,10 @@ const sendTokenCookie = (res, userId) => {
 /**
  * Registers a brand-new user profile in the database.
  * Verifies email uniqueness, hashes form password, creates profile, and issues auth cookies.
+ * 
+ * @param {import('express').Request} req - Express request object containing `name`, `email`, and `password` in body.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {Promise<void>} 201 Created with user data, or 400/500 error.
  */
 export const registerUser = async (req, res) => {
     const { name, email, password } = req.body;
@@ -53,6 +57,10 @@ export const registerUser = async (req, res) => {
 /**
  * Authenticates a returning user based on password crypt matching.
  * Dispatches session token cookies upon successful verification.
+ * 
+ * @param {import('express').Request} req - Express request object containing `email` and `password`.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {Promise<void>} 200 OK with user data, or 401/500 error.
  */
 export const loginUser = async (req, res) => {
     const { email, password } = req.body;
@@ -81,6 +89,10 @@ export const loginUser = async (req, res) => {
 /**
  * Session verification route handler.
  * Runs after `protect` middleware to return active session parameters to the client.
+ * 
+ * @param {import('express').Request} req - Express request object containing `user` from middleware.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {Promise<void>} 200 OK with authentication status and user data.
  */
 export const checkAuth = async (req, res) => {
     // req.user has already been resolved by our auth middleware
@@ -92,6 +104,10 @@ export const checkAuth = async (req, res) => {
 
 /**
  * Purges active token cookies to securely terminate client sessions.
+ * 
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {void} 200 OK after invalidating cookie.
  */
 export const logoutUser = (req, res) => {
     // Purges the cookie immediately by setting its expiration date to the epoch start
@@ -106,6 +122,10 @@ export const logoutUser = (req, res) => {
 
 /**
  * Updates the display name inside the active user's document record.
+ * 
+ * @param {import('express').Request} req - Express request object containing `name` in body and `user` from middleware.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {Promise<void>} 200 OK with updated user profile, or 404/500 error.
  */
 export const updateProfile = async (req, res) => {
     try {

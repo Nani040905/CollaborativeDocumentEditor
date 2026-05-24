@@ -1,6 +1,10 @@
 import React from 'react';
 import { FileText, Trash2, Calendar, Users } from 'lucide-react';
 
+/**
+ * Document Grid Component.
+ * Renders a responsive grid array of interactive document cards for the user workspace.
+ */
 const DocumentGrid = ({ 
     documents, 
     isShared, 

@@ -4,6 +4,10 @@ import User from '../models/User.js';
 /**
  * Creates a new document.
  * Saves the document with default titles and sets the creator user as the Owner.
+ * 
+ * @param {import('express').Request} req - Express request with `title` and `content` in body, and `user` from auth.
+ * @param {import('express').Response} res - Express response.
+ * @returns {Promise<void>} 201 Created with new document payload.
  */
 export const createDocument = async (req, res) => {
     const { title, content } = req.body;
@@ -27,6 +31,10 @@ export const createDocument = async (req, res) => {
  * Retrieves all documents owned by user OR where they are invited as a collaborator.
  * Employs Mongoose `.populate()` to inject owner profile objects (name, email)
  * and sorts them newest first.
+ * 
+ * @param {import('express').Request} req - Express request with `user` payload.
+ * @param {import('express').Response} res - Express response.
+ * @returns {Promise<void>} 200 OK with array of document objects.
  */
 export const getDocuments = async (req, res) => {
     try {
@@ -50,6 +58,10 @@ export const getDocuments = async (req, res) => {
  * Fetches a single document by its Object ID with detailed population.
  * Restricts access via an authorization firewall checking if the requesting user
  * is either the document owner or an invited collaborator.
+ * 
+ * @param {import('express').Request} req - Express request with document `id` in params.
+ * @param {import('express').Response} res - Express response.
+ * @returns {Promise<void>} 200 OK with full document data or 403/404 errors.
  */
 export const getDocumentById = async (req, res) => {
     const { id } = req.params;
@@ -84,6 +96,10 @@ export const getDocumentById = async (req, res) => {
 /**
  * Updates a document's title.
  * Restricts renaming permissions to either the Document Owner or active Collaborators.
+ * 
+ * @param {import('express').Request} req - Express request with `id` param and `title` body.
+ * @param {import('express').Response} res - Express response.
+ * @returns {Promise<void>} 200 OK with updated document or permission error.
  */
 export const updateDocumentTitle = async (req, res) => {
     const { id } = req.params;
@@ -119,6 +135,10 @@ export const updateDocumentTitle = async (req, res) => {
 /**
  * Deletes a document.
  * Strictly restricted to the Document Owner (collaborators cannot delete documents).
+ * 
+ * @param {import('express').Request} req - Express request with document `id`.
+ * @param {import('express').Response} res - Express response.
+ * @returns {Promise<void>} 200 OK on success or 403 if unauthorized.
  */
 export const deleteDocument = async (req, res) => {
     const { id } = req.params;
@@ -147,6 +167,10 @@ export const deleteDocument = async (req, res) => {
  * Invites a collaborator by email address.
  * Looks up target profile inside Users database, and appends reference to the Document collaborators array.
  * Restricts invitations strictly to the primary Document Owner.
+ * 
+ * @param {import('express').Request} req - Express request with document `id` and collaborator `email`.
+ * @param {import('express').Response} res - Express response.
+ * @returns {Promise<void>} 200 OK on success or error on failure.
  */
 export const addCollaborator = async (req, res) => {
     const { id } = req.params;
@@ -193,6 +217,10 @@ export const addCollaborator = async (req, res) => {
 /**
  * Saves a document's rich-text content (Quill editor changes).
  * Restricts updates to either the Document Owner or active Collaborators.
+ * 
+ * @param {import('express').Request} req - Express request with `id` and `content`.
+ * @param {import('express').Response} res - Express response.
+ * @returns {Promise<void>} 200 OK on success.
  */
 export const updateDocumentContent = async (req, res) => {
     const { id } = req.params;
@@ -227,6 +255,10 @@ export const updateDocumentContent = async (req, res) => {
 
 /**
  * Allows any authenticated user to join a document as an active editor/collaborator.
+ * 
+ * @param {import('express').Request} req - Express request containing the link `id`.
+ * @param {import('express').Response} res - Express response.
+ * @returns {Promise<void>} 200 OK after user is added to array.
  */
 export const joinDocument = async (req, res) => {
     const { id } = req.params;

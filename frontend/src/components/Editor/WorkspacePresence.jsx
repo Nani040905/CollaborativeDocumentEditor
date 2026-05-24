@@ -1,6 +1,10 @@
 import React from 'react';
 import { CloudLightning, RefreshCw } from 'lucide-react';
 
+/**
+ * Workspace Presence Component.
+ * Displays the current WebSocket connection status and active user avatars.
+ */
 const WorkspacePresence = ({ connected, showPresence, activeUsers }) => {
     return (
         <div className="flex items-center gap-4">

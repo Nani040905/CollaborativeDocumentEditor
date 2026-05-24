@@ -7,6 +7,11 @@ import User from '../models/User.js';
  * decrypts and verifies the signature using `JWT_SECRET`,
  * fetches the corresponding active user record (excluding password crypt hashes for maximum security),
  * and assigns the profile to `req.user` before continuing route processing.
+ * 
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @param {import('express').NextFunction} next - Express next middleware function.
+ * @returns {Promise<void>} Calls next() or returns 401 Unauthorized.
  */
 export const protect = async (req, res, next) => {
     // Read the authorization cookie token sent by the browser client

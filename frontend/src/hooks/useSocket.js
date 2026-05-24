@@ -3,6 +3,13 @@ import { io } from 'socket.io-client';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
+/**
+ * Custom hook to establish and manage a WebSocket connection for real-time collaboration.
+ * 
+ * @param {string} documentId - The ID of the document workspace to join.
+ * @param {object} user - The authenticated user profile object.
+ * @returns {object} { socket, connected } - The active Socket.IO instance and connection status.
+ */
 export const useSocket = (documentId, user) => {
     const [connected, setConnected] = useState(false);
     const socketRef = useRef(null);

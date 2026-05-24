@@ -1,5 +1,9 @@
 import React from 'react';
 
+/**
+ * Remote Cursors Overlay Component.
+ * Renders the real-time cursor positions and name tags of other collaborators.
+ */
 const RemoteCursorsOverlay = ({ showPresence, remoteCursors }) => {
     if (!showPresence) return null;
 

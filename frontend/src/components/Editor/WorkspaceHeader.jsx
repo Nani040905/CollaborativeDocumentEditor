@@ -1,6 +1,10 @@
 import React from 'react';
 import { ArrowLeft, RefreshCw, AlertCircle, Check } from 'lucide-react';
 
+/**
+ * Workspace Header Component.
+ * Displays the document title input, back button, and real-time save status indicator.
+ */
 const WorkspaceHeader = ({ title, handleTitleChange, saveStatus, navigate }) => {
     return (
         <div className="flex items-center gap-4 flex-1">

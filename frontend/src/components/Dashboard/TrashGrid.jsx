@@ -1,6 +1,10 @@
 import React from 'react';
 import { FileText, RotateCcw, X, Calendar, Trash2 } from 'lucide-react';
 
+/**
+ * Trash Grid Component.
+ * Displays deleted documents with options to restore or permanently delete them.
+ */
 const TrashGrid = ({ 
     trashDocuments, 
     formatSnippet, 
