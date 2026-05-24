@@ -1,112 +1,136 @@
+import jwt from 'jsonwebtoken';
+import cookie from 'cookie'; // Fast cookie-parsing library
+import User from '../models/User.js';
 import Document from '../models/Document.js';
 
-// Memory store to track active users per document room
-// Schema: { [documentId]: { [socketId]: { id, name, email, color } } }
 const activeRooms = {};
+const CURSOR_COLORS = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4'];
 
-// Palette for generating random user cursor colors
-const CURSOR_COLORS = [
-    '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', 
-    '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4'
-];
+// BIND SOCKET SECURITY HANDSHAKE MIDDLEWARE
+export const authorizeSocket = async (socket, next) => {
+    try {
+        const cookieHeader = socket.handshake.headers.cookie;
+        if (!cookieHeader) {
+            return next(new Error('Authentication Error: Missing credentials cookie.'));
+        }
 
-/**
- * Modular Socket.IO Handler.
- * Sets up isolated document rooms, real-time rich-text delta broadcasters,
- * and high-frequency debounced database autosave persistence brokers.
- */
+        // Parse cookie object
+        const cookies = cookie.parse(cookieHeader);
+        const token = cookies.token;
+
+        if (!token) {
+            return next(new Error('Authentication Error: Missing session token.'));
+        }
+
+        // Decode and verify JWT
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.userId).select('-password');
+
+        if (!user) {
+            return next(new Error('Authentication Error: User session has expired or is invalid.'));
+        }
+
+        // Mount authenticated user directly onto socket connection
+        socket.userProfile = {
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email
+        };
+
+        next();
+    } catch (err) {
+        return next(new Error(`Authentication Error: Unrecognized connection token. ${err.message}`));
+    }
+};
+
 const socketHandler = (io) => {
+    // Inject security middleware into Socket.io pipeline
+    io.use(authorizeSocket);
+
     io.on('connection', (socket) => {
-        console.log(`[Socket Connected] Socket ID: ${socket.id}`);
+        // Safe access: User is already securely validated!
+        const user = socket.userProfile;
+        console.log(`[Socket Secure Connected] user: ${user.name} | Socket ID: ${socket.id}`);
 
-        // Listen for document room join requests
-        socket.on('join-document', ({ documentId, user }) => {
-            if (!documentId || !user) return;
+        socket.on('join-document', async ({ documentId }) => {
+            if (!documentId) return;
 
-            // Put this socket inside an isolated room named by the Document ID
-            socket.join(documentId);
-            
-            // Tag connection metadata properties
-            socket.documentId = documentId;
+            try {
+                // Strict Room Security Database Check
+                const doc = await Document.findById(documentId);
+                if (!doc) {
+                    return socket.emit('error', 'Document not found.');
+                }
 
-            // Assign a random color for cursor overlays
-            const userColor = CURSOR_COLORS[Math.floor(Math.random() * CURSOR_COLORS.length)];
-            const userProfile = { ...user, color: userColor };
-            socket.user = userProfile;
+                // Check authorization
+                const isOwner = doc.owner.toString() === user.id;
+                const isCollaborator = doc.collaborators.some((c) => c.toString() === user.id);
 
-            console.log(`[Socket Room] User ${user.name} joined room ${documentId} with cursor color ${userColor}`);
+                if (!isOwner && !isCollaborator) {
+                    console.warn(`[Security Intrusion Alert] User ${user.name} attempted unauthorized access to doc ${documentId}`);
+                    return socket.emit('unauthorized', 'Access denied. You are not authorized to view this document.');
+                }
 
-            // Initialize room container if empty
-            if (!activeRooms[documentId]) {
-                activeRooms[documentId] = {};
+                // Put socket inside workspace
+                socket.join(documentId);
+                socket.documentId = documentId;
+                
+                const userColor = CURSOR_COLORS[Math.floor(Math.random() * CURSOR_COLORS.length)];
+                const userWithPresence = { ...user, color: userColor };
+                socket.presence = userWithPresence;
+
+                if (!activeRooms[documentId]) {
+                    activeRooms[documentId] = {};
+                }
+                activeRooms[documentId][socket.id] = userWithPresence;
+
+                socket.emit('active-users-list', Object.values(activeRooms[documentId]));
+                socket.broadcast.to(documentId).emit('user-joined', userWithPresence);
+
+                console.log(`[Socket Room Secure] User ${user.name} authorized in room ${documentId}`);
+            } catch (err) {
+                socket.emit('error', 'Failed to resolve database parameters.');
             }
-            // Save user to active list
-            activeRooms[documentId][socket.id] = userProfile;
-
-            // Send list of all active users in the room back to the client that just joined
-            socket.emit('active-users-list', Object.values(activeRooms[documentId]));
-
-            // Broadcast to everyone else in the room that a new collaborator has joined
-            socket.broadcast.to(documentId).emit('user-joined', userProfile);
         });
 
-        // Broadcast cursor selection movements
         socket.on('cursor-move', (range) => {
-            const { documentId, user } = socket;
-            if (!documentId || !user) return;
+            const { documentId, presence } = socket;
+            if (!documentId || !presence) return;
 
-            // Broadcast remote user's cursor selection to other clients
             socket.broadcast.to(documentId).emit('remote-cursor-move', {
                 socketId: socket.id,
-                user,
+                user: presence,
                 range
             });
         });
 
-        // Listen for editor rich-text delta synchronization packets
         socket.on('send-changes', (delta) => {
             const { documentId } = socket;
-            if (!documentId) return;
-
-            // Broadcast the operational delta back out to other room occupants (avoiding echoing back to the typing client)
-            socket.broadcast.to(documentId).emit('receive-changes', delta);
-        });
-
-        // SAVE DOCUMENT PERSISTENCE HANDLER
-        // Persists the debounced rich-text JSON content state from the client directly to MongoDB.
-        socket.on('save-document', async (content) => {
-            const { documentId } = socket;
-            if (!documentId) return;
-
-            try {
-                // Perform high-efficiency database write bypassing heavy HTTP pipelines
-                await Document.findByIdAndUpdate(documentId, { content });
-                console.log(`[Autosave] Document ${documentId} persisted successfully over WebSocket.`);
-            } catch (error) {
-                console.error(`[Autosave Error] Failed to save document ${documentId}:`, error.message);
+            if (documentId) {
+                socket.broadcast.to(documentId).emit('receive-changes', delta);
             }
         });
 
-        // Handle connection drop-offs
+        socket.on('save-document', async (content) => {
+            const { documentId } = socket;
+            if (documentId) {
+                await Document.findByIdAndUpdate(documentId, { content });
+            }
+        });
+
         socket.on('disconnect', () => {
-            console.log(`[Socket Disconnected] Socket ID: ${socket.id}`);
-            const { documentId, user } = socket;
+            const { documentId, presence } = socket;
 
             if (documentId && activeRooms[documentId]) {
-                // Remove user from active dictionary
                 delete activeRooms[documentId][socket.id];
-                
-                // Clear empty room containers
                 if (Object.keys(activeRooms[documentId]).length === 0) {
                     delete activeRooms[documentId];
                 } else {
-                    // Update other room users
                     io.to(documentId).emit('active-users-list', Object.values(activeRooms[documentId]));
                 }
             }
 
-            if (documentId && user) {
-                // Inform other room members of user exit using the specific socket ID
+            if (documentId && presence) {
                 socket.broadcast.to(documentId).emit('user-left', socket.id);
             }
         });

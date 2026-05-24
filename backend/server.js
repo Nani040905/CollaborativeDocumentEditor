@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import docRoutes from './routes/docRoutes.js';
@@ -29,6 +30,20 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
+
+// Limit authentication endpoints specifically to prevent brute force
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes window
+    max: 100, // Limit each IP address to 100 requests per window
+    message: {
+        message: 'Too many requests originating from this IP. Please try again after 15 minutes.'
+    },
+    standardHeaders: true, // Return rate limit info in standard headers
+    legacyHeaders: false // Disable old legacy headers
+});
+
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 // Mount API routes
 app.use('/api/auth', authRoutes);
