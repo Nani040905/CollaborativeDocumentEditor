@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router';
 
 export const useDashboardState = (user, fetchDocuments, dbDocuments, dbCreateDocument, dbDeleteDocument, updateProfile, logout, navigate) => {
-    const [activeTab, setActiveTab] = useState('documents');
+    const { tab } = useParams();
+    const activeTab = tab || 'documents';
+    
+    const setActiveTab = (newTab) => {
+        navigate(`/dashboard/${newTab}`);
+    };
     const [searchQuery, setSearchQuery] = useState('');
     const [trashDocuments, setTrashDocuments] = useState([]);
     
