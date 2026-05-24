@@ -14,25 +14,26 @@ A real-time collaborative editor requires a distinct architectural layout compar
 
 ```mermaid
 graph TD
-    subgraph Client [Client Side (React / Vite)]
-        A[React UI Components] <-->|Zustand States| B[Zustand Stores]
-        A <-->|Rich Text Inputs| C[Quill.js Editor Engine]
-        B <-->|REST Calls / Cookies| D[Axios API Client]
-        C <-->|Operations / Deltas| E[Socket.io Client]
+
+    subgraph Client["Client Side - React / Vite"]
+        A["React UI Components"] <-->|"Zustand States"| B["Zustand Stores"]
+        A <-->|"Rich Text Inputs"| C["Quill.js Editor Engine"]
+        B <-->|"REST Calls / Cookies"| D["Axios API Client"]
+        C <-->|"Operations / Deltas"| E["Socket.io Client"]
     end
 
-    subgraph Server [Backend Side (Node.js / Express)]
-        F[Express Application] <-->|REST Route Handlers| G[Authentication & CRUD Controller]
-        H[Socket.io Server] <-->|Rooms Management| I[Socket Event Broker]
+    subgraph Server["Backend Side - Node.js / Express"]
+        F["Express Application"] <-->|"REST Route Handlers"| G["Authentication & CRUD Controller"]
+        H["Socket.io Server"] <-->|"Rooms Management"| I["Socket Event Broker"]
     end
 
-    subgraph Database [Storage Layer]
-        G <-->|Mongoose ODM| J[(MongoDB Database)]
-        I <-->|Autosave Worker| J
+    subgraph Database["Storage Layer"]
+        G <-->|"Mongoose ODM"| J[("MongoDB Database")]
+        I <-->|"Autosave Worker"| J
     end
 
-    D <-->|HTTP REST / Cookies| F
-    E <-->|Persistant WebSockets| H
+    D <-->|"HTTP REST / Cookies"| F
+    E <-->|"Persistent WebSockets"| H
 ```
 
 ### Architectural Decisions
