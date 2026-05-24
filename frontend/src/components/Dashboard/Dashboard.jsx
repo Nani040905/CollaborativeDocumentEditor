@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import useAuthStore from '../../store/useAuthStore';
 import useDocStore from '../../store/useDocStore';
 import useThemeStore from '../../store/useThemeStore';
@@ -19,6 +19,7 @@ import CreateDocModal from './CreateDocModal';
  */
 const Dashboard = () => {
     const navigate = useNavigate();
+    const { tab } = useParams();
     const { user, logout, updateProfile } = useAuthStore();
     const { 
         documents: dbDocuments, 
@@ -29,8 +30,11 @@ const Dashboard = () => {
     } = useDocStore();
     const { theme, toggleTheme } = useThemeStore();
     
-    // Core navigation state (toggles between workspace documents, shared sheets, settings, and trash bins)
-    const [activeTab, setActiveTab] = useState('documents');
+    // Core navigation state derived from URL
+    const activeTab = tab || 'documents';
+    const setActiveTab = (newTab) => {
+        navigate(`/dashboard/${newTab}`);
+    };
     
     // Search queries (filters active list titles reactively)
     const [searchQuery, setSearchQuery] = useState('');

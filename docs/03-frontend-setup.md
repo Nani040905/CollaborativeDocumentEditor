@@ -169,6 +169,10 @@ function App() {
                 {/* Secured Private Routes */}
                 <Route 
                     path="/dashboard" 
+                    element={<Navigate to="/dashboard/documents" replace />} 
+                />
+                <Route 
+                    path="/dashboard/:tab" 
                     element={
                         <ProtectedRoute>
                             <Dashboard />
@@ -211,7 +215,7 @@ To ensure performant user registration input validation, the `Register.jsx` comp
 To deliver a premium MERN user experience, the dashboard layout provides tabbed page workspaces and a robust local recovery pipeline (trash bin) to prevent accidental data losses.
 
 ### Sidebar Navigation & Tab View Architecture (`src/components/Dashboard/Dashboard.jsx`)
-We track the active sub-pane inside `Dashboard.jsx` using `const [activeTab, setActiveTab] = useState('documents');` and conditionally render four distinct user panels:
+We track the active sub-pane inside `Dashboard.jsx` using parameterized routing via `react-router`'s `useParams()` instead of simple local state. By listening to the URL (`/dashboard/:tab`), we conditionally render four distinct user panels and ensure tab selections persist across browser reloads:
 
 1. **All Documents Tab (`documents`)**:
    * Houses your personal files.

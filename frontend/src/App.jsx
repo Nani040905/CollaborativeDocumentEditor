@@ -40,6 +40,10 @@ function App() {
                 {/* Secured Private Routes (Protected by session verification gates) */}
                 <Route 
                     path="/dashboard" 
+                    element={<Navigate to="/dashboard/documents" replace />} 
+                />
+                <Route 
+                    path="/dashboard/:tab" 
                     element={
                         <ProtectedRoute>
                             <Dashboard />
