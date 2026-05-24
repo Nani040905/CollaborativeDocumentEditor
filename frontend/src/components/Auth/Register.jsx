@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import useAuthStore from '../../store/useAuthStore';
-import { User, Mail, Lock, UserPlus } from 'lucide-react';
+import { User, Mail, Lock, UserPlus, Eye, EyeOff } from 'lucide-react';
 
 /**
  * Register Account Creation Component.
@@ -18,6 +18,7 @@ const Register = () => {
     // UI tracking parameters
     const [loading, setLoading] = useState(false);
     const [formError, setFormError] = useState(null);
+    const [showPassword, setShowPassword] = useState(false);
 
     // Mount React Hook Form parameters
     const {
@@ -123,9 +124,9 @@ const Register = () => {
                                 <Lock size={16} />
                             </span>
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
-                                className={`w-full rounded border bg-slate-950/80 py-2 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-600 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
+                                className={`w-full rounded border bg-slate-950/80 py-2 pl-10 pr-10 text-sm text-slate-200 placeholder-slate-600 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
                                     errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-800'
                                     }`}
                                 {...register('password', {
@@ -136,6 +137,13 @@ const Register = () => {
                                     },
                                 })}
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 hover:text-slate-300 transition cursor-pointer"
+                            >
+                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
                         </div>
                         {errors.password && (
                             <span className="mt-1 block text-[11px] text-red-400 font-medium">{errors.password.message}</span>
