@@ -1,15 +1,13 @@
 import express from 'express';
 import { protect } from '../middleware/authMiddleware.js';
-import {
-    createDocument,
-    getDocuments,
-    getDocumentById,
-    updateDocumentTitle,
-    deleteDocument,
-    addCollaborator,
-    updateDocumentContent,
-    joinDocument
-} from '../controllers/docController.js';
+import { createDocument } from '../controllers/docs/createDocument.js';
+import { getDocuments } from '../controllers/docs/getDocuments.js';
+import { getDocumentById } from '../controllers/docs/getDocumentById.js';
+import { updateDocumentTitle } from '../controllers/docs/updateDocumentTitle.js';
+import { deleteDocument } from '../controllers/docs/deleteDocument.js';
+import { addCollaborator } from '../controllers/docs/addCollaborator.js';
+import { updateDocumentContent } from '../controllers/docs/updateDocumentContent.js';
+import { joinDocument } from '../controllers/docs/joinDocument.js';
 
 // Initialize an Express router instance for document-related endpoints
 const router = express.Router();

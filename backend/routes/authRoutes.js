@@ -1,5 +1,9 @@
 import express from 'express';
-import { registerUser, loginUser, logoutUser, checkAuth, updateProfile } from '../controllers/authController.js';
+import { registerUser } from '../controllers/auth/registerUser.js';
+import { loginUser } from '../controllers/auth/loginUser.js';
+import { logoutUser } from '../controllers/auth/logoutUser.js';
+import { checkAuth } from '../controllers/auth/checkAuth.js';
+import { updateProfile } from '../controllers/auth/updateProfile.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 // Initialize an Express router instance for auth-related endpoints
