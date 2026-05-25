@@ -4,7 +4,7 @@ A real-time, rich-text collaborative document editor built with the MERN stack (
 
 ---
 
-## 🏗 System Architecture
+## System Architecture
 
 This project is structured as a full-stack monorepo with separated client and server environments.
 
@@ -97,7 +97,7 @@ sequenceDiagram
 
 ---
 
-## 🚀 Quick Start Guide
+## Quick Start Guide
 
 ### Prerequisites
 - Node.js (v18+)
@@ -143,8 +143,8 @@ The application will be available at `http://localhost:5173`.
 
 ---
 
-## 📚 Detailed Documentation
+## Detailed Documentation
 
 For deep dives into the specific environments, refer to the nested documentation:
-- 📖 **[Frontend Documentation](./frontend/README.md)**: UI Components, Zustand State, Design Systems, etc.
-- 📖 **[Backend Documentation](./backend/README.md)**: Express Pipelines, WebSockets, Security, REST APIs, etc.
+- **[Frontend Documentation](./frontend/README.md)**: UI Components, Zustand State, Design Systems, etc.
+- **[Backend Documentation](./backend/README.md)**: Express Pipelines, WebSockets, Security, REST APIs, etc.

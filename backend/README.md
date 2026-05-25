@@ -2,7 +2,7 @@
 
 This directory contains the Node.js / Express backend for the Collaborative Document Editor. It acts as the central hub for database persistence, user authentication, and high-performance WebSocket broadcasting.
 
-## 📦 Installed Packages & Setup
+## Installed Packages & Setup
 
 ### Project Creation Steps
 To recreate the foundation of this backend architecture, the following commands were used:
@@ -31,7 +31,7 @@ npm install --save-dev nodemon
 
 ---
 
-## 🏗 Express Pipelines & Architecture
+## Express Pipelines & Architecture
 
 ### Request Pipeline Flowchart
 
@@ -65,7 +65,7 @@ flowchart LR
 
 ---
 
-## 🔒 Security & Authentication
+## Security & Authentication
 
 ### JWT & HttpOnly Cookies
 Authentication is entirely stateless. Upon successful login/registration:
@@ -102,7 +102,7 @@ sequenceDiagram
 
 ---
 
-## 📡 REST API Matrix
+## REST API Matrix
 
 All routes under `/api/documents` require a valid JWT cookie to access.
 
@@ -119,7 +119,7 @@ All routes under `/api/documents` require a valid JWT cookie to access.
 
 ---
 
-## 🛠 Advanced / Theoretical Features
+## Advanced / Theoretical Features
 
 > **Note:** The following features are architectural strategies planned for future scalability upgrades and are not currently active in the core repository.
 
@@ -128,7 +128,7 @@ All routes under `/api/documents` require a valid JWT cookie to access.
 
 ---
 
-## ⚙️ Local Developer Onboarding
+## Local Developer Onboarding
 
 ### Environment Parameters
 Create a `.env` file in the `backend` root:
