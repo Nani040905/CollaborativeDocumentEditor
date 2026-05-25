@@ -2,7 +2,7 @@
 
 This directory contains the React client for the Collaborative Document Editor. It handles real-time rendering, rich-text document state, secure routing, and websocket telemetry.
 
-## 📦 Installed Packages & Setup
+## Installed Packages & Setup
 
 ### Project Creation Steps
 To recreate the foundation of this frontend architecture, the following commands were used:
@@ -31,7 +31,7 @@ npm install tailwindcss @tailwindcss/vite
 
 ---
 
-## 🎨 Design Systems & Layout Structures
+## Design Systems & Layout Structures
 
 ### UI Styling
 The application utilizes **TailwindCSS** for its primary design system.
@@ -60,7 +60,7 @@ flowchart TD
 
 ---
 
-## 🧩 React UI Components & Forms
+## React UI Components & Forms
 
 ### Component Architecture
 The application UI is broken down into isolated, modular sub-components:
@@ -74,7 +74,7 @@ Authentication forms (Login/Register) are powered by **React Hook Form**:
 
 ---
 
-## 🧠 Data Flow & Zustand Stores
+## Data Flow & Zustand Stores
 
 State is managed centrally using **Zustand** rather than prop-drilling or heavy Context APIs.
 
@@ -107,7 +107,7 @@ sequenceDiagram
 
 ---
 
-## 🔌 API & Axios Setup
+## API & Axios Setup
 
 ### Global Configuration
 Axios is configured with `withCredentials: true` globally to ensure HttpOnly session cookies (containing JWTs) are automatically attached to every outgoing request.
@@ -125,7 +125,7 @@ Axios is configured with `withCredentials: true` globally to ensure HttpOnly ses
 
 ---
 
-## 🛠 Local Developer Onboarding
+## Local Developer Onboarding
 
 ### Environment Configuration
 Create a `.env` file in the `frontend` root directory:
