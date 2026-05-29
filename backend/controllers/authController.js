@@ -17,7 +17,8 @@ const sendTokenCookie = (res, userId) => {
         httpOnly: true, // Firewalls the cookie from client-side script read attempts (XSS protection)
         secure: process.env.NODE_ENV === 'production', // Instructs the browser to only transmit cookies via HTTPS when in production
         sameSite: 'lax', // CSRF setting restricting cross-site cookie transmissions
-        maxAge: 7 * 24 * 60 * 60 * 1000 // Lifespan set to 7 days matching the JWT expiration
+        maxAge: 7 * 24 * 60 * 60 * 1000, // Lifespan set to 7 days matching the JWT expiration
+        partitioned: true
     });
 };
 
@@ -115,7 +116,8 @@ export const logoutUser = (req, res) => {
         httpOnly: true,
         expires: new Date(0), // Instantly expire cookie
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production'
+        secure: process.env.NODE_ENV === 'production',
+        partitioned: true
     });
     res.status(200).json({ message: 'Logged out successfully.' });
 };
