@@ -52,26 +52,19 @@ const userSchema = new mongoose.Schema({
  * Mongoose Pre-Save Schema Hook:
  * Intercepts saving events to automatically hash plain-text user passwords using BCrypt.
  * Skips encrypting if the password field was not modified (e.g. on simple profile updates).
- * 
- * @param {Function} next - Mongoose middleware next() callback
  */
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
     // Only execute hashing if the password field is new or explicitly modified
     // This prevents re-hashing an already hashed password during standard user updates (like changing name)
     if (!this.isModified('password')) {
-        return next();
+        return;
     }
 
-    try {
-        // Generate cryptographic salt with 10 iterations
-        // 10 is standard for balancing security vs computation time
-        const salt = await bcrypt.genSalt(10);
-        // Hash the plain-text password with the generated salt
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (error) {
-        next(error);
-    }
+    // Generate cryptographic salt with 10 iterations
+    // 10 is standard for balancing security vs computation time
+    const salt = await bcrypt.genSalt(10);
+    // Hash the plain-text password with the generated salt
+    this.password = await bcrypt.hash(this.password, salt);
 });
 
 /**
