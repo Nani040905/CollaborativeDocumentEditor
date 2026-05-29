@@ -28,6 +28,26 @@ const app = express();
  */
 const server = http.createServer(app);
 
+// Parse allowed origins from environment variable CLIENT_URL (comma-separated for multiple clients)
+const allowedOrigins = process.env.CLIENT_URL
+    ? process.env.CLIENT_URL.split(',').map(url => url.trim())
+    : ['http://localhost:5173'];
+
+const corsOriginHelper = (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, or same-origin)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is allowed or is a local address
+    const isAllowed = allowedOrigins.includes(origin);
+    const isLocal = /^http:\/\/localhost(:\d+)?$/.test(origin) || /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
+    
+    if (isAllowed || isLocal) {
+        callback(null, true);
+    } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+};
+
 /**
  * Configure Cross-Origin Resource Sharing (CORS) options.
  * Restricts which domains can interact with this API.
@@ -35,8 +55,7 @@ const server = http.createServer(app);
  * @type {cors.CorsOptions}
  */
 const corsOptions = {
-    // Dynamically set origin based on environment or default to local Vite dev server
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: corsOriginHelper,
     credentials: true, // Essential: Allows cookies/session tokens to be sent with REST requests
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow standard CRUD methods
     allowedHeaders: ['Content-Type', 'Authorization'] // Whitelist headers for JSON payloads and auth tokens
@@ -94,7 +113,7 @@ app.get('/health', (req, res) => {
  */
 const io = new Server(server, {
     cors: {
-        origin: process.env.CLIENT_URL || 'http://localhost:5173',
+        origin: corsOriginHelper,
         methods: ['GET', 'POST'],
         credentials: true // Crucial for authenticating WebSocket connections via HTTP-only cookies
     },

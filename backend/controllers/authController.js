@@ -12,13 +12,15 @@ const sendTokenCookie = (res, userId) => {
         expiresIn: '7d'
     });
 
+    const isProd = process.env.NODE_ENV === 'production';
+
     // Mount the cookie on the response payload
     res.cookie('token', token, {
         httpOnly: true, // Firewalls the cookie from client-side script read attempts (XSS protection)
-        secure: process.env.NODE_ENV === 'production', // Instructs the browser to only transmit cookies via HTTPS when in production
-        sameSite: 'lax', // CSRF setting restricting cross-site cookie transmissions
+        secure: isProd, // Instructs the browser to only transmit cookies via HTTPS when in production
+        sameSite: isProd ? 'none' : 'lax', // Must be 'none' for cross-origin cookies in production (Vercel to Render)
         maxAge: 7 * 24 * 60 * 60 * 1000, // Lifespan set to 7 days matching the JWT expiration
-        partitioned: true
+        partitioned: isProd
     });
 };
 
@@ -111,13 +113,14 @@ export const checkAuth = async (req, res) => {
  * @returns {void} 200 OK after invalidating cookie.
  */
 export const logoutUser = (req, res) => {
+    const isProd = process.env.NODE_ENV === 'production';
     // Purges the cookie immediately by setting its expiration date to the epoch start
     res.cookie('token', '', {
         httpOnly: true,
         expires: new Date(0), // Instantly expire cookie
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        partitioned: true
+        sameSite: isProd ? 'none' : 'lax',
+        secure: isProd,
+        partitioned: isProd
     });
     res.status(200).json({ message: 'Logged out successfully.' });
 };
