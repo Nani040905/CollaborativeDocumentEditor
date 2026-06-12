@@ -105,9 +105,25 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
+// Parse allowed origins from CLIENT_URL (comma-separated for multiple clients)
+const allowedOrigins = process.env.CLIENT_URL
+    ? process.env.CLIENT_URL.split(',').map(url => url.trim())
+    : ['http://localhost:5173'];
+
+const corsOriginHelper = (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const isAllowed = allowedOrigins.includes(origin);
+    const isLocal = /^http:\/\/localhost(:\d+)?$/.test(origin);
+    if (isAllowed || isLocal) {
+        callback(null, true);
+    } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+};
+
 // Configure Cross-Origin Resource Sharing (CORS)
 const corsOptions = {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: corsOriginHelper,
     credentials: true, // Allow cookies to be sent with REST requests
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -129,7 +145,7 @@ app.get('/health', (req, res) => {
 // Configure Socket.IO Server
 const io = new Server(server, {
     cors: {
-        origin: process.env.CLIENT_URL || 'http://localhost:5173',
+        origin: corsOriginHelper,
         methods: ['GET', 'POST'],
         credentials: true
     },

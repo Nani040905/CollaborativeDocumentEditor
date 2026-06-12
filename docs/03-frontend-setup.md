@@ -141,6 +141,7 @@ We assemble the visual mapping and coordinate user redirections inside `App.jsx`
 ```jsx
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router';
+import HomePage from './components/Home/HomePage';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -159,8 +160,8 @@ function App() {
     return (
         <Router>
             <Routes>
-                {/* Home redirection */}
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                {/* Public Landing Page */}
+                <Route path="/" element={<HomePage />} />
                 
                 {/* Authentication Routes */}
                 <Route path="/login" element={<Login />} />

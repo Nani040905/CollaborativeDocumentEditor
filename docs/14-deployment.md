@@ -1,60 +1,55 @@
 # Part 14: Production Deployment
 
-In this guide, you will transition your application from your local machine to the cloud. You will learn how to configure a free-tier MongoDB Atlas cluster, deploy your Node/WebSocket server to Render, deploy your React frontend to Vercel, and resolve the common Single Page App (SPA) page-reload 404 error.
+In this guide, you will move your application from your local machine to the cloud. You will set up a MongoDB Atlas database, deploy your backend to Render, deploy your frontend to Vercel, and configure cross-origin cookies so authentication works across separate domains.
 
 ---
 
 ## 1. Hosting Database on MongoDB Atlas
 
-To let your cloud backend write document data, you need a highly available cloud database:
+Your cloud backend needs a cloud database to store documents and user data:
 
-1. Sign up for a free account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
+1. Sign up at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
 2. Create a new Shared Cluster (Free tier).
-3. **Database Access**: Create a database user with read/write permissions. Keep the password secure!
-4. **Network Access**: Add IP address `0.0.0.0/0` (Allow Access from Anywhere) so your Render backend servers can connect.
-5. Click **Connect** -> Choose **Drivers** -> Copy your Mongoose connection string:
+3. **Database Access**: Create a database user with read/write permissions.
+4. **Network Access**: Add `0.0.0.0/0` (Allow from Anywhere) so Render can connect.
+5. Click **Connect** -> **Drivers** -> Copy your connection string:
    ```text
-   mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net/collaborative_editor?retryWrites=true&w=majority
+   mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net/collab_editor?retryWrites=true&w=majority
    ```
 
 ---
 
-## 2. Deploying Backend Service (Render)
+## 2. Deploying Backend on Render
 
-Render is an excellent platform for deploying Node applications with native WebSocket support.
+Render hosts your Node.js API and WebSocket server.
 
-1. Commit your codebase to a GitHub Repository.
+1. Push your code to a GitHub repository.
 2. Log into [Render](https://render.com) and click **New** -> **Web Service**.
-3. Link your GitHub Repository.
-4. Configure the following parameters:
+3. Connect your GitHub repository.
+4. Configure the service:
    * **Runtime**: `Node`
-   * **Build Command**: `cd backend && npm install`
-   * **Start Command**: `cd backend && npm start`
-5. Click **Advanced** and add the following Environment Variables:
+   * **Root Directory**: `backend` *(important for monorepo)*
+   * **Build Command**: `npm install`
+   * **Start Command**: `node server.js`
+5. Add these Environment Variables:
    * `NODE_ENV`: `production`
-   * `PORT`: `10000` (Render binds this dynamically)
-   * `MONGO_URI`: `your_mongodb_atlas_connection_string`
-   * `JWT_SECRET`: `your_random_long_production_cryptographic_secret`
+   * `MONGO_URI`: your MongoDB Atlas connection string
+   * `JWT_SECRET`: a long random secret string
    * `CLIENT_URL`: `https://your-frontend-app.vercel.app`
-6. Click **Deploy Web Service**. Render will output a live URL (e.g., `https://editor-api.onrender.com`).
+6. Click **Deploy**. Note the live URL (e.g., `https://your-backend.onrender.com`).
 
-> [!WARNING]
-> Remember to update your backend CORS cookie policy settings for production!
-> In `backend/controllers/authController.js`, ensure you set `secure: true` (only send cookies over HTTPS) and `sameSite: 'none'` (cross-domain cookies) during production deployment cycles.
+> [!IMPORTANT]
+> The `CLIENT_URL` value must match your Vercel frontend URL exactly. If you need to support multiple origins (e.g., production + local dev), separate them with commas:
+> `https://your-frontend.vercel.app,http://localhost:5173`
 
 ---
 
-## 3. Deploying Frontend Application (Vercel)
+## 3. Deploying Frontend on Vercel
 
-Vercel is optimized for building and serving lightning-fast React applications.
+Vercel hosts the compiled React app as static files.
 
-### Handling Vercel SPA Routing (Vercel Redirect Rules)
-By default, React uses client-side routing. If a user reloads `https://your-app.vercel.app/document/123` directly in their browser address bar, Vercel will attempt to look for a physical folder named `/document/123` on its server, resulting in a **404 Not Found** error.
-
-To solve this, create a redirect rewrite rule configuration file at the root of your `frontend/` folder.
-
-#### Creating Routing Rules (`frontend/vercel.json`)
-Create `frontend/vercel.json` and paste this code:
+### SPA Routing Fix (`frontend/vercel.json`)
+React uses client-side routing. Without a rewrite rule, refreshing a page like `/document/123` would return a 404. The `vercel.json` file handles this:
 
 ```json
 {
@@ -67,23 +62,34 @@ Create `frontend/vercel.json` and paste this code:
 }
 ```
 
-### Deploying via Vercel
-1. Log into [Vercel](https://vercel.com) and link your GitHub Repository.
-2. Select your project folder, and configure:
+### Deploying
+1. Log into [Vercel](https://vercel.com) and import your GitHub repository.
+2. Configure the project:
    * **Framework Preset**: `Vite`
-   * **Root Directory**: `frontend`
-3. Add your Environment Variables:
-   * `VITE_API_URL`: `https://your-editor-api.onrender.com/api`
-   * `VITE_SOCKET_URL`: `https://your-editor-api.onrender.com`
-4. Click **Deploy**. Vercel will build your static files and provide your production URL.
+   * **Root Directory**: `frontend` *(important for monorepo)*
+3. Add Environment Variables:
+   * `VITE_API_URL`: `https://your-backend.onrender.com/api`
+   * `VITE_SOCKET_URL`: `https://your-backend.onrender.com`
+4. Click **Deploy**.
 
 ---
 
-## 4. Production Environment Check
+## 4. Cross-Origin Cookie Configuration
 
-Verify these settings once deployed:
-1. Load your Vercel URL. You should be greeted with your login panel.
-2. Inspect cookies in Chrome DevTools (`Application` -> `Cookies`). Ensure your `token` cookie has the `Secure` and `SameSite=None` attributes checked.
-3. Open a document and check the top right badge. It should transition from "Reconnecting..." to **Live Sync**, indicating a successful WebSocket connection to your Render server.
+Since Vercel and Render use different domains, the browser treats API calls as cross-site requests. For HttpOnly cookies (auth tokens) to work, the backend uses these settings in production:
 
-Your MERN Mapped Editor is now fully deployed and live on cloud servers! Next, we will discuss advanced conflict resolution and future feature upgrades.
+- `sameSite: 'none'` — tells the browser to send cookies with cross-site requests
+- `secure: true` — required by browsers when using `SameSite=None` (HTTPS only)
+- `partitioned: true` — supports Chrome's CHIPS for third-party cookie handling
+
+These settings are applied automatically in `authController.js` when `NODE_ENV` is set to `production`. In development, the app falls back to `sameSite: 'lax'` and `secure: false`.
+
+---
+
+## 5. Post-Deployment Checklist
+
+1. Load your Vercel URL. You should see the landing page.
+2. Register a new account and log in.
+3. Check cookies in DevTools (`Application` -> `Cookies`). The `token` cookie should have `Secure` and `SameSite=None` attributes.
+4. Open a document and check that the connection status shows **Live Sync**, confirming the WebSocket connection to Render works.
+5. Go back to Render and update `CLIENT_URL` if your Vercel URL changed.

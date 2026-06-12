@@ -51,11 +51,14 @@ const sendTokenCookie = (res, userId) => {
         expiresIn: '7d'
     });
 
+    const isProd = process.env.NODE_ENV === 'production';
+
     res.cookie('token', token, {
         httpOnly: true, // Prevents XSS script read attacks
-        secure: process.env.NODE_ENV === 'production', // Only HTTPS in production
-        sameSite: 'lax', // CSRF mitigation setting
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days matching token
+        secure: isProd, // Only HTTPS in production
+        sameSite: isProd ? 'none' : 'lax', // 'none' needed for cross-origin cookies (Vercel to Render)
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days matching token
+        partitioned: isProd
     });
 };
 
@@ -109,11 +112,13 @@ export const checkAuth = async (req, res) => {
 };
 
 export const logoutUser = (req, res) => {
+    const isProd = process.env.NODE_ENV === 'production';
     res.cookie('token', '', {
         httpOnly: true,
         expires: new Date(0), // Instantly purge cookie
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production'
+        sameSite: isProd ? 'none' : 'lax',
+        secure: isProd,
+        partitioned: isProd
     });
     res.status(200).json({ message: 'Logged out successfully.' });
 };

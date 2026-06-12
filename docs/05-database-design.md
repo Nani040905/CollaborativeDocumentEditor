@@ -43,19 +43,14 @@ const userSchema = new mongoose.Schema({
 });
 
 // Middleware hook: Hash password automatically prior to save
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
     // Only execute if password is new or modified
     if (!this.isModified('password')) {
-        return next();
+        return;
     }
 
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (error) {
-        next(error);
-    }
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Instance Method: Compare input password against database hashed password
